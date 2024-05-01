@@ -1,0 +1,11 @@
+[package]
+name = "autd3-firmware-test"
+version = "7.0.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.82"
+autd3 = { path = "autd3/autd3" }
+autd3-link-soem = { path = "autd3/autd3-link-soem" }
+colored = "2.1.0"
+tokio = { version = "1.37.0", features = ["full"] }
