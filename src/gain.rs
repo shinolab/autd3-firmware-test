@@ -8,13 +8,12 @@ pub async fn gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> 
         Focus::new(autd.geometry.center() + 150. * Vector3::z()),
     ))
     .await?;
-    print_msg_and_wait_for_key(
-            "Check that the focal points are generated 150mm directly above the center of each device by your hands."
-        );
+    print_msg_and_wait_for_key("各デバイスの中心から150mm直上に焦点が生成されていること");
 
-    autd.send(Null::new().with_segment(Segment::S1, Some(TransitionMode::SyncIdx)))
+    autd.send(Null::new().with_segment(Segment::S1, true))
         .await?;
-    print_msg_and_wait_for_key("Check that the focal points have disappeared.");
+    print_msg_and_wait_for_key("焦点が消えたこと");
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
     autd.fpga_state().await?.iter().for_each(|state| {
         assert!(state.is_some());
         let state = state.unwrap();
@@ -23,8 +22,9 @@ pub async fn gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> 
         assert_eq!(None, state.current_stm_segment());
     });
 
-    autd.send(ChangeGainSegment::new(Segment::S0)).await?;
-    print_msg_and_wait_for_key("Check that the focal points are presented again.");
+    autd.send(SwapSegment::gain(Segment::S0)).await?;
+    print_msg_and_wait_for_key("焦点が再び提示されたこと");
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
     autd.fpga_state().await?.iter().for_each(|state| {
         assert!(state.is_some());
         let state = state.unwrap();
@@ -33,9 +33,10 @@ pub async fn gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> 
         assert_eq!(None, state.current_stm_segment());
     });
 
-    autd.send(Null::new().with_segment(Segment::S1, None))
+    autd.send(Null::new().with_segment(Segment::S1, false))
         .await?;
-    print_msg_and_wait_for_key("Check that the focal points are still presented.");
+    print_msg_and_wait_for_key("焦点がまだ出ていること");
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
     autd.fpga_state().await?.iter().for_each(|state| {
         assert!(state.is_some());
         let state = state.unwrap();
@@ -44,8 +45,9 @@ pub async fn gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> 
         assert_eq!(None, state.current_stm_segment());
     });
 
-    autd.send(ChangeGainSegment::new(Segment::S1)).await?;
-    print_msg_and_wait_for_key("Check that the focal points have disappeared.");
+    autd.send(SwapSegment::gain(Segment::S1)).await?;
+    print_msg_and_wait_for_key("焦点が消えたこと");
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
     autd.fpga_state().await?.iter().for_each(|state| {
         assert!(state.is_some());
         let state = state.unwrap();
@@ -58,41 +60,29 @@ pub async fn gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> 
         Err(AUTDError::Internal(
             AUTDInternalError::InvalidSegmentTransition
         )),
-        autd.send(ChangeGainSTMSegment::new(
-            Segment::S0,
-            TransitionMode::SyncIdx
-        ))
-        .await
+        autd.send(SwapSegment::gain_stm(Segment::S0, TransitionMode::SyncIdx))
+            .await
     );
     assert_eq!(
         Err(AUTDError::Internal(
             AUTDInternalError::InvalidSegmentTransition
         )),
-        autd.send(ChangeGainSTMSegment::new(
-            Segment::S1,
-            TransitionMode::SyncIdx
-        ))
-        .await
+        autd.send(SwapSegment::gain_stm(Segment::S1, TransitionMode::SyncIdx))
+            .await
     );
     assert_eq!(
         Err(AUTDError::Internal(
             AUTDInternalError::InvalidSegmentTransition
         )),
-        autd.send(ChangeFocusSTMSegment::new(
-            Segment::S0,
-            TransitionMode::SyncIdx
-        ))
-        .await
+        autd.send(SwapSegment::focus_stm(Segment::S0, TransitionMode::SyncIdx))
+            .await
     );
     assert_eq!(
         Err(AUTDError::Internal(
             AUTDInternalError::InvalidSegmentTransition
         )),
-        autd.send(ChangeFocusSTMSegment::new(
-            Segment::S1,
-            TransitionMode::SyncIdx
-        ))
-        .await
+        autd.send(SwapSegment::focus_stm(Segment::S1, TransitionMode::SyncIdx))
+            .await
     );
 
     Ok(())

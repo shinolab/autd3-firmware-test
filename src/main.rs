@@ -1,10 +1,14 @@
 mod clear;
 mod debug;
+mod force_fan;
 mod gain;
 mod modulation;
 mod phase_filter;
+mod pulse_width_encoder;
+mod silencer;
 mod stm_focus;
 mod stm_gain;
+mod transition;
 
 use colored::*;
 use std::io::{self, Write};
@@ -14,49 +18,36 @@ use anyhow::Result;
 use autd3::{derive::*, prelude::*};
 use autd3_link_soem::{Status, SOEM};
 
+fn print_check(msg: &str) {
+    println!("{}: {}", "Check".yellow().bold(), msg);
+}
+
 fn print_msg_and_wait_for_key(msg: &str) {
     msg.lines().for_each(|line| {
-        print!("{}: ", "check: ".yellow().bold());
+        print!("{}: ", "Check".yellow().bold());
         println!("{}", line);
     });
-    println!("Press Enter to continue...");
+    println!("Enterを押して進む...");
     std::io::stdin().read_line(&mut String::new()).unwrap();
 }
 
-#[tokio::main]
-async fn main() -> Result<()> {
-    print_msg_and_wait_for_key(
-        "Make sure you have two devices connected that have the latest firmware.\nAlso check that an oscilloscope is connected to GPIO[0] and GPIO[1] pins of each device.\nAnd check if outputs of GPIO pins are low.",
-    );
-
+async fn run<B: LinkBuilder>(b: B, freq: u32) -> Result<()> {
     let mut autd = Controller::builder()
-        .add_device(AUTD3::new(Vector3::zeros()))
-        .add_device(AUTD3::new(Vector3::zeros()))
-        .open(
-            SOEM::builder().with_err_handler(|slave, status| match status {
-                Status::Error(msg) => eprintln!("Error [{}]: {}", slave, msg),
-                Status::Lost(msg) => {
-                    eprintln!("Lost [{}]: {}", slave, msg);
-                    std::process::exit(-1);
-                }
-                Status::StateChanged(msg) => eprintln!("StateChanged [{}]: {}", slave, msg),
-            }),
-        )
+        .add_device(AUTD3::new(Vector3::zeros()).with_ultrasound_freq(freq))
+        .add_device(AUTD3::new(Vector3::zeros()).with_ultrasound_freq(freq))
+        .add_device(AUTD3::new(Vector3::zeros()).with_ultrasound_freq(freq))
+        .open(b)
         .await?;
 
-    autd.send(ConfigureDebugSettings::new(|_dev| {
-        [
-            DebugType::BaseSignal,
-            DebugType::None,
-            DebugType::None,
-            DebugType::None,
-        ]
+    autd.send(DebugSettings::new(|_dev, gpio| match gpio {
+        GPIOOut::O0 => DebugType::BaseSignal,
+        _ => DebugType::None,
     }))
     .await?;
-    print_msg_and_wait_for_key("Check if outputs of GPIO[0] are synchronized.");
+    print_check("各デバイスのGPIO[0]ピンの出力が同期していること");
 
     let firmware_version = autd.firmware_version().await?;
-    assert_eq!(2, firmware_version.len());
+    assert_eq!(autd.geometry.num_devices(), firmware_version.len());
     firmware_version.iter().for_each(|firm_info| {
         assert_eq!(
             FirmwareVersion::LATEST_VERSION_NUM_MAJOR,
@@ -76,10 +67,8 @@ async fn main() -> Result<()> {
         );
     });
 
-    autd.send(ConfigureReadsFPGAState::new(|_| true)).await?;
-
+    autd.send(ReadsFPGAState::new(|_| true)).await?;
     tokio::time::sleep(std::time::Duration::from_millis(200)).await;
-
     autd.fpga_state().await?.iter().for_each(|state| {
         assert!(state.is_some());
         let state = state.unwrap();
@@ -97,28 +86,40 @@ async fn main() -> Result<()> {
     );
 
     let tests: Vec<Test<_>> = vec![
-        ("Gain test", |autd| Box::pin(gain::gain_test(autd))),
-        ("Modulation test", |autd| {
+        ("Gainテスト", |autd| Box::pin(gain::gain_test(autd))),
+        ("Modulationテスト", |autd| {
             Box::pin(modulation::modulation_test(autd))
         }),
-        ("FocusSTM test", |autd| {
+        ("FocusSTMテスト", |autd| {
             Box::pin(stm_focus::stm_focus_test(autd))
         }),
-        ("GainSTM test", |autd| {
+        ("GainSTMテスト", |autd| {
             Box::pin(stm_gain::stm_gain_test(autd))
         }),
-        ("PhaseFilter test", |autd| {
+        ("Silencerテスト", |autd| {
+            Box::pin(silencer::silencer_test(autd))
+        }),
+        ("PhaseFilterテスト", |autd| {
             Box::pin(phase_filter::phase_filter_test(autd))
         }),
-        ("Debug test", |autd| Box::pin(debug::debug_test(autd))),
+        ("ForceFanテスト", |autd| {
+            Box::pin(force_fan::force_fan_test(autd))
+        }),
+        ("Pulse Width Encoderテスト", |autd| {
+            Box::pin(pulse_width_encoder::pwe_test(autd))
+        }),
+        ("Transitionテスト", |autd| {
+            Box::pin(transition::transition_test(autd))
+        }),
+        ("Debugテスト", |autd| Box::pin(debug::debug_test(autd))),
     ];
 
     loop {
         tests.iter().enumerate().for_each(|(i, (name, _))| {
             println!("[{}]: {}", i, name);
         });
-        println!("[Others]: Finish");
-        print!("{}", "Choose number: ".green().bold());
+        println!("[その他]: 終了");
+        print!("{}: ", "番号を選択".green().bold());
         io::stdout().flush()?;
 
         let mut s = String::new();
@@ -130,12 +131,7 @@ async fn main() -> Result<()> {
             _ => break,
         }
 
-        println!("press any key to finish...");
-        let mut _s = String::new();
-        io::stdin().read_line(&mut _s)?;
-
-        autd.send((Null::default(), ConfigureSilencer::default()))
-            .await?;
+        autd.send((Null::default(), Silencer::default())).await?;
 
         clear::clear_test(&mut autd).await?;
     }
@@ -144,4 +140,64 @@ async fn main() -> Result<()> {
 
     println!("Ok!");
     Ok(())
+}
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    print_check("2台の最新ファームウェアを書き込んだデバイスが接続されていること");
+    print_check("各デバイスのGPIO[0]ピンとGPIO[1]ピンにオシロスコープを接続していること");
+    print_check("各デバイスのGPIOピンに出力がないこと");
+    print!("{} (デフォルトは40000): ", "周波数を入力".green().bold());
+    io::stdout().flush()?;
+    let mut s = String::new();
+    io::stdin().read_line(&mut s)?;
+    let freq = match s.trim().parse::<u32>() {
+        Ok(i) => i,
+        _ => 40000,
+    };
+
+    let links = vec!["SOEM", "TwinCAT", "Simulator", "Audit"];
+    links.iter().enumerate().for_each(|(i, link)| {
+        println!("[{}]: {}", i, link);
+    });
+    print!("{} (デフォルトはSOEM): ", "リンクを選択".green().bold());
+    io::stdout().flush()?;
+    let mut s = String::new();
+    io::stdin().read_line(&mut s)?;
+    match s.trim().parse::<usize>() {
+        Ok(i) if i < links.len() => match i {
+            0 => {
+                run(
+                    SOEM::builder().with_err_handler(|slave, status| match status {
+                        Status::Error(msg) => eprintln!("Error [{}]: {}", slave, msg),
+                        Status::Lost(msg) => {
+                            eprintln!("Lost [{}]: {}", slave, msg);
+                            std::process::exit(-1);
+                        }
+                        Status::StateChanged(msg) => eprintln!("StateChanged [{}]: {}", slave, msg),
+                    }),
+                    freq,
+                )
+                .await
+            }
+            1 => run(autd3_link_twincat::TwinCAT::builder(), freq).await,
+            2 => run(autd3_link_simulator::Simulator::builder(8080), freq).await,
+            3 => run(autd3::link::Audit::builder(), freq).await,
+            _ => unreachable!(),
+        },
+        _ => {
+            run(
+                SOEM::builder().with_err_handler(|slave, status| match status {
+                    Status::Error(msg) => eprintln!("Error [{}]: {}", slave, msg),
+                    Status::Lost(msg) => {
+                        eprintln!("Lost [{}]: {}", slave, msg);
+                        std::process::exit(-1);
+                    }
+                    Status::StateChanged(msg) => eprintln!("StateChanged [{}]: {}", slave, msg),
+                }),
+                freq,
+            )
+            .await
+        }
+    }
 }

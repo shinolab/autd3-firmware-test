@@ -2,7 +2,7 @@ use autd3::{derive::*, prelude::*};
 
 pub async fn clear_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
     autd.send(Clear::new()).await?;
-    autd.send(ConfigureReadsFPGAState::new(|_| true)).await?;
+    autd.send(ReadsFPGAState::new(|_| true)).await?;
     tokio::time::sleep(std::time::Duration::from_millis(200)).await;
     autd.fpga_state().await?.iter().for_each(|state| {
         assert!(state.is_some());
@@ -15,7 +15,7 @@ pub async fn clear_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()>
         Err(AUTDError::Internal(
             AUTDInternalError::InvalidSegmentTransition
         )),
-        autd.send(ChangeFocusSTMSegment::new(
+        autd.send(SwapSegment::focus_stm(
             Segment::S0,
             TransitionMode::SyncIdx
         ))
@@ -25,7 +25,7 @@ pub async fn clear_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()>
         Err(AUTDError::Internal(
             AUTDInternalError::InvalidSegmentTransition
         )),
-        autd.send(ChangeFocusSTMSegment::new(
+        autd.send(SwapSegment::focus_stm(
             Segment::S1,
             TransitionMode::SyncIdx
         ))
@@ -35,7 +35,7 @@ pub async fn clear_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()>
         Err(AUTDError::Internal(
             AUTDInternalError::InvalidSegmentTransition
         )),
-        autd.send(ChangeGainSTMSegment::new(
+        autd.send(SwapSegment::gain_stm(
             Segment::S0,
             TransitionMode::SyncIdx
         ))
@@ -45,7 +45,7 @@ pub async fn clear_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()>
         Err(AUTDError::Internal(
             AUTDInternalError::InvalidSegmentTransition
         )),
-        autd.send(ChangeGainSTMSegment::new(
+        autd.send(SwapSegment::gain_stm(
             Segment::S1,
             TransitionMode::SyncIdx
         ))

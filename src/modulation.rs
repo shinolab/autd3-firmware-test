@@ -8,9 +8,8 @@ pub async fn modulation_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Resul
         Focus::new(autd.geometry.center() + 150. * Vector3::z()),
     ))
     .await?;
-    print_msg_and_wait_for_key(
-        "Check that the focal points are generated 150mm directly above the center of each device by your hands."
-    );
+    print_msg_and_wait_for_key("各デバイスの中心から150mm直上に焦点が生成されていること");
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
     autd.fpga_state().await?.iter().for_each(|state| {
         assert!(state.is_some());
         let state = state.unwrap();
@@ -19,9 +18,10 @@ pub async fn modulation_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Resul
         assert_eq!(None, state.current_stm_segment());
     });
 
-    autd.send(Static::new().with_segment(Segment::S1, Some(TransitionMode::SyncIdx)))
+    autd.send(Static::new().with_segment(Segment::S1, Some(TransitionMode::Immidiate)))
         .await?;
-    print_msg_and_wait_for_key("Check that the AM modulation is no longer applied.");
+    print_msg_and_wait_for_key("AMが適用されていないこと");
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
     autd.fpga_state().await?.iter().for_each(|state| {
         assert!(state.is_some());
         let state = state.unwrap();
@@ -30,12 +30,13 @@ pub async fn modulation_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Resul
         assert_eq!(None, state.current_stm_segment());
     });
 
-    autd.send(ChangeModulationSegment::new(
+    autd.send(SwapSegment::modulation(
         Segment::S0,
-        TransitionMode::SyncIdx,
+        TransitionMode::Immidiate,
     ))
     .await?;
-    print_msg_and_wait_for_key("Check that the AM modulation has been applied again.");
+    print_msg_and_wait_for_key("AMが再び適用されたこと");
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
     autd.fpga_state().await?.iter().for_each(|state| {
         assert!(state.is_some());
         let state = state.unwrap();
@@ -46,7 +47,8 @@ pub async fn modulation_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Resul
 
     autd.send(Static::with_intensity(0).with_segment(Segment::S1, None))
         .await?;
-    print_msg_and_wait_for_key("Check that the focal points are still presented.");
+    print_msg_and_wait_for_key("AMがまだ適用されていること");
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
     autd.fpga_state().await?.iter().for_each(|state| {
         assert!(state.is_some());
         let state = state.unwrap();
@@ -55,12 +57,13 @@ pub async fn modulation_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Resul
         assert_eq!(None, state.current_stm_segment());
     });
 
-    autd.send(ChangeModulationSegment::new(
+    autd.send(SwapSegment::modulation(
         Segment::S1,
-        TransitionMode::SyncIdx,
+        TransitionMode::Immidiate,
     ))
     .await?;
-    print_msg_and_wait_for_key("Check that the focal points have disappeared.");
+    print_msg_and_wait_for_key("AMが適用されていないこと");
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
     autd.fpga_state().await?.iter().for_each(|state| {
         assert!(state.is_some());
         let state = state.unwrap();
@@ -71,7 +74,7 @@ pub async fn modulation_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Resul
 
     #[derive(Modulation, Clone, Copy)]
     pub struct Sawtooth {
-        config: SamplingConfiguration,
+        config: SamplingConfig,
         loop_behavior: LoopBehavior,
         reverse: bool,
     }
@@ -79,7 +82,7 @@ pub async fn modulation_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Resul
     impl Sawtooth {
         fn new() -> Self {
             Self {
-                config: SamplingConfiguration::from_freq_nearest(256.).unwrap(),
+                config: SamplingConfig::FreqNearest(256.),
                 loop_behavior: LoopBehavior::once(),
                 reverse: false,
             }
@@ -87,7 +90,7 @@ pub async fn modulation_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Resul
 
         fn reverse() -> Self {
             Self {
-                config: SamplingConfiguration::from_freq_nearest(256.).unwrap(),
+                config: SamplingConfig::FreqNearest(256.),
                 loop_behavior: LoopBehavior::once(),
                 reverse: true,
             }
@@ -95,20 +98,21 @@ pub async fn modulation_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Resul
     }
 
     impl Modulation for Sawtooth {
-        fn calc(&self) -> Result<Vec<EmitIntensity>, AUTDInternalError> {
-            let mut res = (0..=255u8)
-                .map(|i| EmitIntensity::new(i))
-                .collect::<Vec<_>>();
-            if self.reverse {
-                res.reverse();
-            }
-            Ok(res)
+        fn calc(&self, geometry: &Geometry) -> Result<HashMap<usize, Vec<u8>>, AUTDInternalError> {
+            Self::transform(geometry, |_| {
+                let mut res = (0..=255u8).collect::<Vec<_>>();
+                if self.reverse {
+                    res.reverse();
+                }
+                Ok(res)
+            })
         }
     }
 
     autd.send(Sawtooth::new().with_segment(Segment::S0, Some(TransitionMode::SyncIdx)))
         .await?;
-    print_msg_and_wait_for_key("Check that the AM modulation is applied with a sawtooth pattern.");
+    print_msg_and_wait_for_key("のこぎり波AMが1波形分だけ適用されること");
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
     autd.fpga_state().await?.iter().for_each(|state| {
         assert!(state.is_some());
         let state = state.unwrap();
@@ -119,9 +123,8 @@ pub async fn modulation_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Resul
 
     autd.send(Sawtooth::reverse().with_segment(Segment::S1, Some(TransitionMode::SyncIdx)))
         .await?;
-    print_msg_and_wait_for_key(
-        "Check that the AM modulation is applied with a reversed sawtooth pattern.",
-    );
+    print_msg_and_wait_for_key("逆のこぎり波AMが1波形分だけ適用されること");
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
     autd.fpga_state().await?.iter().for_each(|state| {
         assert!(state.is_some());
         let state = state.unwrap();
@@ -129,6 +132,37 @@ pub async fn modulation_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Resul
         assert_eq!(Some(Segment::S0), state.current_gain_segment());
         assert_eq!(None, state.current_stm_segment());
     });
+
+    {
+        assert_eq!(
+            Err(AUTDError::Internal(
+                AUTDInternalError::InvalidTransitionMode
+            )),
+            autd.send(Static::new().with_segment(Segment::S1, Some(TransitionMode::SyncIdx)))
+                .await
+        );
+        assert_eq!(
+            Err(AUTDError::Internal(
+                AUTDInternalError::InvalidTransitionMode
+            )),
+            autd.send(
+                Static::new()
+                    .with_loop_behavior(LoopBehavior::once())
+                    .with_segment(Segment::S0, Some(TransitionMode::Immidiate))
+            )
+            .await
+        );
+        assert_eq!(
+            Err(AUTDError::Internal(
+                AUTDInternalError::InvalidTransitionMode
+            )),
+            autd.send(SwapSegment::modulation(
+                Segment::S0,
+                TransitionMode::Immidiate
+            ))
+            .await
+        );
+    }
 
     Ok(())
 }

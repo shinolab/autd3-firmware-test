@@ -19,8 +19,9 @@ pub async fn stm_gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
     let stm = GainSTM::from_freq(0.5).add_gains_from_iter(gen_foci());
     autd.send(stm).await?;
     print_msg_and_wait_for_key(
-        "Check that the focal points are moving at a freq of 0.5 Hz over a circumference of 30 mm radius by your hands."
+        "各デバイスの中心から150mm直上を中心に半径30mmの円周上に0.5HzのSTMが適用されていること",
     );
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
     autd.fpga_state().await?.iter().for_each(|state| {
         assert!(state.is_some());
         let state = state.unwrap();
@@ -30,9 +31,10 @@ pub async fn stm_gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
     });
 
     let stm = GainSTM::from_freq(1.).add_gains_from_iter(gen_foci());
-    autd.send(stm.with_segment(Segment::S1, Some(TransitionMode::SyncIdx)))
+    autd.send(stm.with_segment(Segment::S1, Some(TransitionMode::Immidiate)))
         .await?;
-    print_msg_and_wait_for_key("Check that the freq is now 1 Hz.");
+    print_msg_and_wait_for_key("STM周波数が1Hzに変更されたこと");
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
     autd.fpga_state().await?.iter().for_each(|state| {
         assert!(state.is_some());
         let state = state.unwrap();
@@ -41,12 +43,13 @@ pub async fn stm_gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
         assert_eq!(Some(Segment::S1), state.current_stm_segment());
     });
 
-    autd.send(ChangeGainSTMSegment::new(
+    autd.send(SwapSegment::gain_stm(
         Segment::S0,
-        TransitionMode::SyncIdx,
+        TransitionMode::Immidiate,
     ))
     .await?;
-    print_msg_and_wait_for_key("Check that the freq returned to 0.5 Hz.");
+    print_msg_and_wait_for_key("STM周波数が0.5Hzに戻ったこと");
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
     autd.fpga_state().await?.iter().for_each(|state| {
         assert!(state.is_some());
         let state = state.unwrap();
@@ -62,7 +65,8 @@ pub async fn stm_gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
         .add_gains_from_iter(foci)
         .with_segment(Segment::S1, None);
     autd.send(stm).await?;
-    print_msg_and_wait_for_key("Check that the nothing has chenged. Then, continue if the focal point is on the left size of device and check that the focus movement direction reverses when the focus comes to the right edge and stops after a cycle.");
+    print_msg_and_wait_for_key("何も変化していないこと\n次に, 焦点がデバイスの左端に来たときにEnterを押し次のことを確認する\n焦点が右端に来たときに焦点軌道が反転し, 1サイクル後に停止すること");
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
     autd.fpga_state().await?.iter().for_each(|state| {
         assert!(state.is_some());
         let state = state.unwrap();
@@ -70,12 +74,10 @@ pub async fn stm_gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
         assert_eq!(None, state.current_gain_segment());
         assert_eq!(Some(Segment::S0), state.current_stm_segment());
     });
-    autd.send(ChangeGainSTMSegment::new(
-        Segment::S1,
-        TransitionMode::SyncIdx,
-    ))
-    .await?;
+    autd.send(SwapSegment::gain_stm(Segment::S1, TransitionMode::SyncIdx))
+        .await?;
     print_msg_and_wait_for_key("");
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
     autd.fpga_state().await?.iter().for_each(|state| {
         assert!(state.is_some());
         let state = state.unwrap();
@@ -86,35 +88,60 @@ pub async fn stm_gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
 
     assert_eq!(
         Err(AUTDError::Internal(
-            AUTDInternalError::InvalidSegmentTransition
+            AUTDInternalError::InvalidTransitionMode
         )),
-        autd.send(ChangeFocusSTMSegment::new(
-            Segment::S0,
-            TransitionMode::SyncIdx
-        ))
+        autd.send(
+            GainSTM::from_freq(0.5)
+                .add_gains_from_iter(gen_foci())
+                .with_segment(Segment::S1, Some(TransitionMode::SyncIdx))
+        )
         .await
     );
     assert_eq!(
         Err(AUTDError::Internal(
-            AUTDInternalError::InvalidSegmentTransition
+            AUTDInternalError::InvalidTransitionMode
         )),
-        autd.send(ChangeFocusSTMSegment::new(
-            Segment::S1,
-            TransitionMode::SyncIdx
-        ))
+        autd.send(
+            GainSTM::from_freq(0.5)
+                .add_gains_from_iter(gen_foci())
+                .with_loop_behavior(LoopBehavior::once())
+                .with_segment(Segment::S0, Some(TransitionMode::Immidiate))
+        )
         .await
     );
     assert_eq!(
         Err(AUTDError::Internal(
+            AUTDInternalError::InvalidTransitionMode
+        )),
+        autd.send(SwapSegment::gain_stm(Segment::S0, TransitionMode::SyncIdx))
+            .await
+    );
+
+    assert_eq!(
+        Err(AUTDError::Internal(
             AUTDInternalError::InvalidSegmentTransition
         )),
-        autd.send(ChangeGainSegment::new(Segment::S0)).await
+        autd.send(SwapSegment::focus_stm(Segment::S0, TransitionMode::SyncIdx))
+            .await
     );
     assert_eq!(
         Err(AUTDError::Internal(
             AUTDInternalError::InvalidSegmentTransition
         )),
-        autd.send(ChangeGainSegment::new(Segment::S1)).await
+        autd.send(SwapSegment::focus_stm(Segment::S1, TransitionMode::SyncIdx))
+            .await
+    );
+    assert_eq!(
+        Err(AUTDError::Internal(
+            AUTDInternalError::InvalidSegmentTransition
+        )),
+        autd.send(SwapSegment::gain(Segment::S0)).await
+    );
+    assert_eq!(
+        Err(AUTDError::Internal(
+            AUTDInternalError::InvalidSegmentTransition
+        )),
+        autd.send(SwapSegment::gain(Segment::S1)).await
     );
 
     Ok(())

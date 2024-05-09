@@ -3,19 +3,15 @@ use crate::print_msg_and_wait_for_key;
 use autd3::{derive::*, prelude::*};
 
 pub async fn debug_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
-    autd.send(ConfigureDebugSettings::new(|_| {
-        [
-            DebugType::BaseSignal,
-            DebugType::None,
-            DebugType::None,
-            DebugType::None,
-        ]
+    autd.send(DebugSettings::new(|_dev, gpio| match gpio {
+        GPIOOut::O0 => DebugType::BaseSignal,
+        _ => DebugType::None,
     }))
     .await?;
 
     autd.send((
         Static::new(),
-        Custom::new(|dev| {
+        autd3::gain::Custom::new(|dev| {
             let dev_idx = dev.idx();
             move |tr| match (dev_idx, tr.idx()) {
                 (0, 0) => Drive::new(Phase::new(0), EmitIntensity::new(0xFF)),
@@ -27,75 +23,47 @@ pub async fn debug_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()>
         }),
     ))
     .await?;
-    print_msg_and_wait_for_key("Check that there are no outputs of GPIO[1] pins.");
+    print_msg_and_wait_for_key("各デバイスのGPIO[1]ピンに出力がないこと");
 
-    autd.send(ConfigureDebugSettings::new(|dev| {
-        [
-            DebugType::BaseSignal,
-            DebugType::PwmOut(&dev[0]),
-            DebugType::None,
-            DebugType::None,
-        ]
+    autd.send(DebugSettings::new(|dev, gpio| match gpio {
+        GPIOOut::O0 => DebugType::BaseSignal,
+        GPIOOut::O1 => DebugType::PwmOut(&dev[0]),
+        _ => DebugType::None,
     }))
     .await?;
-    print_msg_and_wait_for_key("Check that a 40kHz square wave with a duty ratio of 50% are output to the GPIO[1] pins and that the phase is shifted by half a cycle.");
+    print_msg_and_wait_for_key(
+        "各デバイスのGPIO[1]ピンにDuty比50%の矩形波が出力されており, 位相が半周期ずれていること",
+    );
 
-    autd.send(ConfigureDebugSettings::new(|dev| {
-        [
-            DebugType::BaseSignal,
-            DebugType::PwmOut(&dev[248]),
-            DebugType::None,
-            DebugType::None,
-        ]
+    autd.send(DebugSettings::new(|dev, gpio| match gpio {
+        GPIOOut::O0 => DebugType::BaseSignal,
+        GPIOOut::O1 => DebugType::PwmOut(&dev[248]),
+        _ => DebugType::None,
     }))
     .await?;
-    print_msg_and_wait_for_key("Check that a 40kHz square wave with a duty ratio of about 17% are output to the GPIO[1] pins and that the phase is shifted by half a cycle.");
+    print_msg_and_wait_for_key(
+        "各デバイスのGPIO[1]ピンにDuty比約17%の矩形波が出力されており, 位相が半周期ずれていること",
+    );
 
-    autd.send(ConfigureDebugSettings::new(|dev| match dev.idx() {
-        0 => [
-            DebugType::BaseSignal,
-            DebugType::PwmOut(&dev[0]),
-            DebugType::None,
-            DebugType::None,
-        ],
-        1 => [
-            DebugType::BaseSignal,
-            DebugType::PwmOut(&dev[248]),
-            DebugType::None,
-            DebugType::None,
-        ],
-        _ => [
-            DebugType::None,
-            DebugType::None,
-            DebugType::None,
-            DebugType::None,
-        ],
+    autd.send(DebugSettings::new(|dev, gpio| match (dev.idx(), gpio) {
+        (0, GPIOOut::O0) => DebugType::BaseSignal,
+        (0, GPIOOut::O1) => DebugType::PwmOut(&dev[0]),
+        (1, GPIOOut::O0) => DebugType::BaseSignal,
+        (1, GPIOOut::O1) => DebugType::PwmOut(&dev[248]),
+        _ => DebugType::None,
     }))
     .await?;
-    print_msg_and_wait_for_key("Check that a 40 kHz square wave are output on the GPIO[1] pins and that their phase are aligned.");
+    print_msg_and_wait_for_key("各デバイスのGPIO[1]ピンの出力矩形波の位相が揃っていること");
 
-    autd.send(ConfigureDebugSettings::new(|dev| match dev.idx() {
-        0 => [
-            DebugType::BaseSignal,
-            DebugType::PwmOut(&dev[1]),
-            DebugType::None,
-            DebugType::None,
-        ],
-        1 => [
-            DebugType::BaseSignal,
-            DebugType::PwmOut(&dev[2]),
-            DebugType::None,
-            DebugType::None,
-        ],
-        _ => [
-            DebugType::None,
-            DebugType::None,
-            DebugType::None,
-            DebugType::None,
-        ],
+    autd.send(DebugSettings::new(|dev, gpio| match (dev.idx(), gpio) {
+        (0, GPIOOut::O0) => DebugType::BaseSignal,
+        (0, GPIOOut::O1) => DebugType::PwmOut(&dev[1]),
+        (1, GPIOOut::O0) => DebugType::BaseSignal,
+        (1, GPIOOut::O1) => DebugType::PwmOut(&dev[2]),
+        _ => DebugType::None,
     }))
     .await?;
-    print_msg_and_wait_for_key("Check that there are no outputs of GPIO[1] pins.");
+    print_msg_and_wait_for_key("各デバイスのGPIO[1]ピンに出力がないこと");
 
     Ok(())
 }
