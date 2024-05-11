@@ -5,9 +5,9 @@ use autd3::{derive::*, prelude::*};
 pub async fn stm_gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
     autd.send(Static::new()).await?;
 
-    let center = autd.geometry.center() + Vector3::new(0., 0., 150.0 * MILLIMETER);
+    let center = autd.geometry.center() + Vector3::new(0., 0., 150.0 * mm);
     let point_num = 200;
-    let radius = 30.0 * MILLIMETER;
+    let radius = 30.0 * mm;
     let gen_foci = || {
         (0..point_num).map(|i| {
             let theta = 2.0 * PI * i as f64 / point_num as f64;
@@ -16,7 +16,7 @@ pub async fn stm_gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
         })
     };
 
-    let stm = GainSTM::from_freq(0.5).add_gains_from_iter(gen_foci());
+    let stm = GainSTM::from_freq(0.5 * Hz).add_gains_from_iter(gen_foci());
     autd.send(stm).await?;
     print_msg_and_wait_for_key(
         "各デバイスの中心から150mm直上を中心に半径30mmの円周上に0.5HzのSTMが適用されていること",
@@ -30,7 +30,7 @@ pub async fn stm_gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
         assert_eq!(Some(Segment::S0), state.current_stm_segment());
     });
 
-    let stm = GainSTM::from_freq(1.).add_gains_from_iter(gen_foci());
+    let stm = GainSTM::from_freq(1. * Hz).add_gains_from_iter(gen_foci());
     autd.send(stm.with_segment(Segment::S1, Some(TransitionMode::Immidiate)))
         .await?;
     print_msg_and_wait_for_key("STM周波数が1Hzに変更されたこと");
@@ -60,7 +60,7 @@ pub async fn stm_gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
 
     let mut foci = gen_foci().rev().collect::<Vec<_>>();
     foci[point_num - 1] = Focus::new(*foci[point_num - 1].pos()).with_intensity(0x00);
-    let stm = GainSTM::from_freq(0.5)
+    let stm = GainSTM::from_freq(0.5 * Hz)
         .with_loop_behavior(LoopBehavior::once())
         .add_gains_from_iter(foci)
         .with_segment(Segment::S1, None);
@@ -91,7 +91,7 @@ pub async fn stm_gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
             AUTDInternalError::InvalidTransitionMode
         )),
         autd.send(
-            GainSTM::from_freq(0.5)
+            GainSTM::from_freq(0.5 * Hz)
                 .add_gains_from_iter(gen_foci())
                 .with_segment(Segment::S1, Some(TransitionMode::SyncIdx))
         )
@@ -102,7 +102,7 @@ pub async fn stm_gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
             AUTDInternalError::InvalidTransitionMode
         )),
         autd.send(
-            GainSTM::from_freq(0.5)
+            GainSTM::from_freq(0.5 * Hz)
                 .add_gains_from_iter(gen_foci())
                 .with_loop_behavior(LoopBehavior::once())
                 .with_segment(Segment::S0, Some(TransitionMode::Immidiate))

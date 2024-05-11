@@ -5,12 +5,12 @@ use autd3::{derive::*, prelude::*};
 pub async fn phase_filter_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
     autd.send(PhaseFilter::additive(|dev| {
         let wavenumber = dev.wavenumber();
-        let p = dev.center() + Vector3::new(0.0, 0.0, 150.0 * MILLIMETER);
-        move |tr| Phase::from_rad((p - tr.position()).norm() * wavenumber)
+        let p = dev.center() + Vector3::new(0.0, 0.0, 150.0 * mm);
+        move |tr| ((p - tr.position()).norm() * wavenumber) * rad
     }))
     .await?;
     autd.send((
-        Sine::new(150.),
+        Sine::new(150. * Hz),
         Uniform::new(0xFF).with_phase(Phase::new(0)),
     ))
     .await?;

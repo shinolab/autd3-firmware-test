@@ -4,7 +4,7 @@ use autd3::{derive::*, prelude::*};
 
 pub async fn modulation_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
     autd.send((
-        Sine::new(150.),
+        Sine::new(150. * Hz),
         Focus::new(autd.geometry.center() + 150. * Vector3::z()),
     ))
     .await?;
@@ -82,7 +82,7 @@ pub async fn modulation_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Resul
     impl Sawtooth {
         fn new() -> Self {
             Self {
-                config: SamplingConfig::FreqNearest(256.),
+                config: SamplingConfig::FreqNearest(256. * Hz),
                 loop_behavior: LoopBehavior::once(),
                 reverse: false,
             }
@@ -90,7 +90,7 @@ pub async fn modulation_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Resul
 
         fn reverse() -> Self {
             Self {
-                config: SamplingConfig::FreqNearest(256.),
+                config: SamplingConfig::FreqNearest(256. * Hz),
                 loop_behavior: LoopBehavior::once(),
                 reverse: true,
             }

@@ -4,7 +4,7 @@ use autd3::prelude::*;
 
 pub async fn gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
     autd.send((
-        Sine::new(150.),
+        Sine::new(150. * Hz),
         Focus::new(autd.geometry.center() + 150. * Vector3::z()),
     ))
     .await?;

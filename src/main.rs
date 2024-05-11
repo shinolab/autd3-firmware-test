@@ -33,9 +33,8 @@ fn print_msg_and_wait_for_key(msg: &str) {
 
 async fn run<B: LinkBuilder>(b: B, freq: u32) -> Result<()> {
     let mut autd = Controller::builder()
-        .add_device(AUTD3::new(Vector3::zeros()).with_ultrasound_freq(freq))
-        .add_device(AUTD3::new(Vector3::zeros()).with_ultrasound_freq(freq))
-        .add_device(AUTD3::new(Vector3::zeros()).with_ultrasound_freq(freq))
+        .add_device(AUTD3::new(Vector3::zeros()).with_ultrasound_freq(freq * Hz))
+        .add_device(AUTD3::new(Vector3::zeros()).with_ultrasound_freq(freq * Hz))
         .open(b)
         .await?;
 
