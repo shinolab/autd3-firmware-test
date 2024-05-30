@@ -2,7 +2,11 @@ use std::time::Duration;
 
 use crate::print_msg_and_wait_for_key;
 
-use autd3::{derive::*, prelude::*};
+use autd3::{
+    derive::*,
+    driver::{defined::ControlPoint, link::Link},
+    prelude::*,
+};
 
 async fn transition_test_focus_stm<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
     let center = autd.geometry.center() + Vector3::new(0., 0., 150.0 * mm);
@@ -16,7 +20,7 @@ async fn transition_test_focus_stm<L: Link>(autd: &mut Controller<L>) -> anyhow:
         })
     };
 
-    let stm = FocusSTM::from_freq(0.5 * Hz).add_foci_from_iter(gen_foci());
+    let stm = FocusSTM::from_freq(0.5 * Hz, gen_foci())?;
     autd.send(stm).await?;
     print_msg_and_wait_for_key(
         "各デバイスの中心から150mm直上を中心に半径30mmの円周上に0.5HzのSTMが適用されていること",
@@ -24,55 +28,62 @@ async fn transition_test_focus_stm<L: Link>(autd: &mut Controller<L>) -> anyhow:
 
     let mut foci = gen_foci().rev().collect::<Vec<_>>();
     foci[point_num - 1] = foci[point_num - 1].with_intensity(0x00);
-    let stm = FocusSTM::from_freq(0.5 * Hz)
+    let stm = FocusSTM::from_freq(0.5 * Hz, foci)?
         .with_loop_behavior(LoopBehavior::once())
-        .add_foci_from_iter(foci)
         .with_segment(Segment::S1, None);
     autd.send(stm).await?;
     print_msg_and_wait_for_key("何も変化していないこと\n次に, 焦点がデバイスの左端に来たときにEnterを押し次のことを確認する\n2秒後(焦点が再び左端に来た時)に焦点軌道が右端にジャンプし逆方向に進み, 1サイクル後に停止すること");
-    autd.send(SwapSegment::focus_stm(
+    autd.send(SwapSegment::FocusSTM(
         Segment::S1,
         TransitionMode::SysTime(DcSysTime::now() + Duration::from_millis(2000)),
     ))
     .await?;
     print_msg_and_wait_for_key("");
 
-    autd.send(SwapSegment::focus_stm(
+    autd.send(SwapSegment::FocusSTM(
         Segment::S0,
-        TransitionMode::Immidiate,
+        TransitionMode::Immediate,
     ))
     .await?;
     print_msg_and_wait_for_key("再び0.5HzのSTMが適用されたこと");
 
     print_msg_and_wait_for_key("焦点がデバイスの左端に来たときにEnterを押し次のことを確認する\n直ちに焦点軌道が右端にジャンプし逆方向に進み, 1サイクル後に停止すること");
     autd.send((
-        SwapSegment::focus_stm(Segment::S1, TransitionMode::GPIO(GPIOIn::I0)),
-        EmulateGPIOIn::new(|_, gpio| gpio == GPIOIn::I0),
+        SwapSegment::FocusSTM(Segment::S1, TransitionMode::GPIO(GPIOIn::I0)),
+        EmulateGPIOIn::new(|_| |gpio| gpio == GPIOIn::I0),
     ))
     .await?;
 
     print_msg_and_wait_for_key("");
 
     autd.send(Sine::new(150. * Hz)).await?;
-    let stm = FocusSTM::from_freq(0.5 * Hz)
-        .add_focus(ControlPoint::new(center + Vector3::new(30., 0., 0.)).with_intensity(0xFF))
-        .add_focus(ControlPoint::new(center + Vector3::new(0., 30., 0.)).with_intensity(0xFF));
+    let stm = FocusSTM::from_freq(
+        0.5 * Hz,
+        [
+            ControlPoint::new(center + Vector3::new(30., 0., 0.)).with_intensity(0xFF),
+            ControlPoint::new(center + Vector3::new(0., 30., 0.)).with_intensity(0xFF),
+        ],
+    )?;
     autd.send(stm).await?;
-    let stm = FocusSTM::from_freq(0.5 * Hz)
-        .add_focus(ControlPoint::new(center + Vector3::new(-30., 0., 0.)).with_intensity(0xFF))
-        .add_focus(ControlPoint::new(center + Vector3::new(0., -30., 0.)).with_intensity(0xFF))
-        .with_segment(Segment::S1, Some(TransitionMode::Ext));
+    let stm = FocusSTM::from_freq(
+        0.5 * Hz,
+        [
+            ControlPoint::new(center + Vector3::new(-30., 0., 0.)).with_intensity(0xFF),
+            ControlPoint::new(center + Vector3::new(0., -30., 0.)).with_intensity(0xFF),
+        ],
+    )?
+    .with_segment(Segment::S1, Some(TransitionMode::Ext));
     autd.send(stm).await?;
     print_msg_and_wait_for_key("1秒ごとに焦点が正方形の頂点にジャンプすること");
 
     {
         autd.send((Static::new(), Null::new())).await?;
-        let stm = FocusSTM::from_freq(0.5 * Hz)
-            .add_foci_from_iter(
-                (0..2).map(|_| ControlPoint::new(Vector3::zeros()).with_intensity(0x00)),
-            )
-            .with_loop_behavior(LoopBehavior::once())
-            .with_segment(Segment::S1, Some(TransitionMode::SysTime(DcSysTime::now())));
+        let stm = FocusSTM::from_freq(
+            0.5 * Hz,
+            (0..2).map(|_| ControlPoint::new(Vector3::zeros()).with_intensity(0x00)),
+        )?
+        .with_loop_behavior(LoopBehavior::once())
+        .with_segment(Segment::S1, Some(TransitionMode::SysTime(DcSysTime::now())));
         assert_eq!(
             Err(AUTDError::Internal(AUTDInternalError::MissTransitionTime)),
             autd.send(stm).await
@@ -94,7 +105,7 @@ async fn transition_test_gain_stm<L: Link>(autd: &mut Controller<L>) -> anyhow::
         })
     };
 
-    let stm = GainSTM::from_freq(0.5 * Hz).add_gains_from_iter(gen_foci());
+    let stm = GainSTM::from_freq(0.5 * Hz, gen_foci())?;
     autd.send(stm).await?;
     print_msg_and_wait_for_key(
         "各デバイスの中心から150mm直上を中心に半径30mmの円周上に0.5HzのSTMが適用されていること",
@@ -102,51 +113,54 @@ async fn transition_test_gain_stm<L: Link>(autd: &mut Controller<L>) -> anyhow::
 
     let mut foci = gen_foci().rev().collect::<Vec<_>>();
     foci[point_num - 1] = foci[point_num - 1].clone().with_intensity(0x00);
-    let stm = GainSTM::from_freq(0.5 * Hz)
+    let stm = GainSTM::from_freq(0.5 * Hz, foci)?
         .with_loop_behavior(LoopBehavior::once())
-        .add_gains_from_iter(foci)
         .with_segment(Segment::S1, None);
     autd.send(stm).await?;
     print_msg_and_wait_for_key("何も変化していないこと\n次に, 焦点がデバイスの左端に来たときにEnterを押し次のことを確認する\n2秒後(焦点が再び左端に来た時)に焦点軌道が右端にジャンプし逆方向に進み, 1サイクル後に停止すること");
-    autd.send(SwapSegment::gain_stm(
+    autd.send(SwapSegment::GainSTM(
         Segment::S1,
         TransitionMode::SysTime(DcSysTime::now() + Duration::from_millis(2000)),
     ))
     .await?;
     print_msg_and_wait_for_key("");
 
-    autd.send(SwapSegment::gain_stm(
-        Segment::S0,
-        TransitionMode::Immidiate,
-    ))
-    .await?;
+    autd.send(SwapSegment::GainSTM(Segment::S0, TransitionMode::Immediate))
+        .await?;
     print_msg_and_wait_for_key("再び0.5HzのSTMが適用されたこと");
 
     print_msg_and_wait_for_key("焦点がデバイスの左端に来たときにEnterを押し次のことを確認する\n直ちに焦点軌道が右端にジャンプし逆方向に進み, 1サイクル後に停止すること");
     autd.send((
-        SwapSegment::gain_stm(Segment::S1, TransitionMode::GPIO(GPIOIn::I0)),
-        EmulateGPIOIn::new(|_, gpio| gpio == GPIOIn::I0),
+        SwapSegment::GainSTM(Segment::S1, TransitionMode::GPIO(GPIOIn::I0)),
+        EmulateGPIOIn::new(|_| |gpio| gpio == GPIOIn::I0),
     ))
     .await?;
 
     print_msg_and_wait_for_key("");
 
     autd.send(Sine::new(150. * Hz)).await?;
-    let stm = GainSTM::from_freq(0.5 * Hz)
-        .add_gain(Focus::new(center + Vector3::new(30., 0., 0.)).with_intensity(0xFF))
-        .add_gain(Focus::new(center + Vector3::new(0., 30., 0.)).with_intensity(0xFF));
+    let stm = GainSTM::from_freq(
+        0.5 * Hz,
+        [
+            Focus::new(center + Vector3::new(30., 0., 0.)).with_intensity(0xFF),
+            Focus::new(center + Vector3::new(0., 30., 0.)).with_intensity(0xFF),
+        ],
+    )?;
     autd.send(stm).await?;
-    let stm = GainSTM::from_freq(0.5 * Hz)
-        .add_gain(Focus::new(center + Vector3::new(-30., 0., 0.)).with_intensity(0xFF))
-        .add_gain(Focus::new(center + Vector3::new(0., -30., 0.)).with_intensity(0xFF))
-        .with_segment(Segment::S1, Some(TransitionMode::Ext));
+    let stm = GainSTM::from_freq(
+        0.5 * Hz,
+        [
+            Focus::new(center + Vector3::new(-30., 0., 0.)).with_intensity(0xFF),
+            Focus::new(center + Vector3::new(0., -30., 0.)).with_intensity(0xFF),
+        ],
+    )?
+    .with_segment(Segment::S1, Some(TransitionMode::Ext));
     autd.send(stm).await?;
     print_msg_and_wait_for_key("1秒ごとに焦点が正方形の頂点にジャンプすること");
 
     {
         autd.send((Static::new(), Null::new())).await?;
-        let stm = GainSTM::from_freq(0.5 * Hz)
-            .add_gains_from_iter((0..2).map(|_| Null::new()))
+        let stm = GainSTM::from_freq(0.5 * Hz, (0..2).map(|_| Null::new()))?
             .with_loop_behavior(LoopBehavior::once())
             .with_segment(Segment::S1, Some(TransitionMode::SysTime(DcSysTime::now())));
         assert_eq!(

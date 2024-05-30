@@ -15,7 +15,11 @@ use std::io::{self, Write};
 
 use anyhow::Result;
 
-use autd3::{derive::*, prelude::*};
+use autd3::{
+    derive::*,
+    driver::{firmware::version::FirmwareVersion, link::LinkBuilder},
+    prelude::*,
+};
 use autd3_link_soem::{Status, SOEM};
 
 fn print_check(msg: &str) {
@@ -32,11 +36,11 @@ fn print_msg_and_wait_for_key(msg: &str) {
 }
 
 async fn run<B: LinkBuilder>(b: B, freq: u32) -> Result<()> {
-    let mut autd = Controller::builder()
-        .add_device(AUTD3::new(Vector3::zeros()).with_ultrasound_freq(freq * Hz))
-        .add_device(AUTD3::new(Vector3::zeros()).with_ultrasound_freq(freq * Hz))
-        .open(b)
-        .await?;
+    let mut autd =
+        Controller::builder([AUTD3::new(Vector3::zeros()), AUTD3::new(Vector3::zeros())])
+            .with_ultrasound_freq(freq * Hz)
+            .open(b)
+            .await?;
 
     autd.send(DebugSettings::new(|_dev, gpio| match gpio {
         GPIOOut::O0 => DebugType::BaseSignal,
@@ -168,12 +172,14 @@ async fn main() -> Result<()> {
             0 => {
                 run(
                     SOEM::builder().with_err_handler(|slave, status| match status {
-                        Status::Error(msg) => eprintln!("Error [{}]: {}", slave, msg),
-                        Status::Lost(msg) => {
-                            eprintln!("Lost [{}]: {}", slave, msg);
+                        Status::Error => eprintln!("Error [{}]: {}", slave, status),
+                        Status::Lost => {
+                            eprintln!("Lost [{}]: {}", slave, status);
                             std::process::exit(-1);
                         }
-                        Status::StateChanged(msg) => eprintln!("StateChanged [{}]: {}", slave, msg),
+                        Status::StateChanged => {
+                            eprintln!("StateChanged [{}]: {}", slave, status)
+                        }
                     }),
                     freq,
                 )
@@ -187,12 +193,12 @@ async fn main() -> Result<()> {
         _ => {
             run(
                 SOEM::builder().with_err_handler(|slave, status| match status {
-                    Status::Error(msg) => eprintln!("Error [{}]: {}", slave, msg),
-                    Status::Lost(msg) => {
-                        eprintln!("Lost [{}]: {}", slave, msg);
+                    Status::Error => eprintln!("Error [{}]: {}", slave, status),
+                    Status::Lost => {
+                        eprintln!("Lost [{}]: {}", slave, status);
                         std::process::exit(-1);
                     }
-                    Status::StateChanged(msg) => eprintln!("StateChanged [{}]: {}", slave, msg),
+                    Status::StateChanged => eprintln!("StateChanged [{}]: {}", slave, status),
                 }),
                 freq,
             )

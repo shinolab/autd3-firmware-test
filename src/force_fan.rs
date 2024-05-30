@@ -1,4 +1,4 @@
-use autd3::prelude::*;
+use autd3::{driver::link::Link, prelude::*};
 
 use crate::print_msg_and_wait_for_key;
 

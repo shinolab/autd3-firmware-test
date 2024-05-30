@@ -1,6 +1,6 @@
 use crate::print_msg_and_wait_for_key;
 
-use autd3::{derive::*, prelude::*};
+use autd3::{derive::*, driver::link::Link, prelude::*};
 
 pub async fn debug_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
     autd.send(DebugSettings::new(|_dev, gpio| match gpio {

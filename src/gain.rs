@@ -1,6 +1,6 @@
 use crate::print_msg_and_wait_for_key;
 
-use autd3::prelude::*;
+use autd3::{driver::link::Link, prelude::*};
 
 pub async fn gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
     autd.send((
@@ -22,7 +22,7 @@ pub async fn gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> 
         assert_eq!(None, state.current_stm_segment());
     });
 
-    autd.send(SwapSegment::gain(Segment::S0)).await?;
+    autd.send(SwapSegment::Gain(Segment::S0)).await?;
     print_msg_and_wait_for_key("焦点が再び提示されたこと");
     tokio::time::sleep(std::time::Duration::from_millis(100)).await;
     autd.fpga_state().await?.iter().for_each(|state| {
@@ -45,7 +45,7 @@ pub async fn gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> 
         assert_eq!(None, state.current_stm_segment());
     });
 
-    autd.send(SwapSegment::gain(Segment::S1)).await?;
+    autd.send(SwapSegment::Gain(Segment::S1)).await?;
     print_msg_and_wait_for_key("焦点が消えたこと");
     tokio::time::sleep(std::time::Duration::from_millis(100)).await;
     autd.fpga_state().await?.iter().for_each(|state| {
@@ -60,28 +60,28 @@ pub async fn gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> 
         Err(AUTDError::Internal(
             AUTDInternalError::InvalidSegmentTransition
         )),
-        autd.send(SwapSegment::gain_stm(Segment::S0, TransitionMode::SyncIdx))
+        autd.send(SwapSegment::GainSTM(Segment::S0, TransitionMode::SyncIdx))
             .await
     );
     assert_eq!(
         Err(AUTDError::Internal(
             AUTDInternalError::InvalidSegmentTransition
         )),
-        autd.send(SwapSegment::gain_stm(Segment::S1, TransitionMode::SyncIdx))
+        autd.send(SwapSegment::GainSTM(Segment::S1, TransitionMode::SyncIdx))
             .await
     );
     assert_eq!(
         Err(AUTDError::Internal(
             AUTDInternalError::InvalidSegmentTransition
         )),
-        autd.send(SwapSegment::focus_stm(Segment::S0, TransitionMode::SyncIdx))
+        autd.send(SwapSegment::FocusSTM(Segment::S0, TransitionMode::SyncIdx))
             .await
     );
     assert_eq!(
         Err(AUTDError::Internal(
             AUTDInternalError::InvalidSegmentTransition
         )),
-        autd.send(SwapSegment::focus_stm(Segment::S1, TransitionMode::SyncIdx))
+        autd.send(SwapSegment::FocusSTM(Segment::S1, TransitionMode::SyncIdx))
             .await
     );
 

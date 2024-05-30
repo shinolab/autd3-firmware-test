@@ -1,6 +1,10 @@
 use crate::print_msg_and_wait_for_key;
 
-use autd3::{derive::*, prelude::*};
+use autd3::{
+    derive::*,
+    driver::{defined::ControlPoint, link::Link},
+    prelude::*,
+};
 
 pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
     autd.send(Silencer::default()).await?;
@@ -34,7 +38,7 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
             ControlPoint::new(center + p).with_intensity(0xFF)
         })
     };
-    let stm = FocusSTM::from_freq(50. * Hz).add_foci_from_iter(gen_foci());
+    let stm = FocusSTM::from_freq(50. * Hz, gen_foci())?;
     autd.send(stm).await?;
     print_msg_and_wait_for_key("50HzのSTMが適用されていること");
 
@@ -53,15 +57,14 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
     // Modulation異常系
     {
         autd.send((Static::new(), Null::new())).await?;
-        autd.send(Silencer::fixed_completion_steps(10, 40)?).await?;
-        assert_eq!(
-            Ok(true),
-            autd.send(
+        autd.send(Silencer::fixed_completion_steps(10, 40)).await?;
+        assert!(autd
+            .send(
                 Sine::with_freq_nearest(100. * Hz)
                     .with_sampling_config(SamplingConfig::DivisionRaw(5120))
             )
             .await
-        );
+            .is_ok());
         assert_eq!(
             Err(AUTDError::Internal(
                 AUTDInternalError::InvalidSilencerSettings
@@ -84,23 +87,22 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
             .await
         );
         autd.send(Static::new()).await?;
-        assert_eq!(
-            Ok(true),
-            autd.send(
+        assert!(autd
+            .send(
                 Sine::with_freq_nearest(100. * Hz)
                     .with_sampling_config(SamplingConfig::DivisionRaw(5120))
                     .with_segment(Segment::S1, None)
             )
             .await
-        );
-        autd.send(Silencer::fixed_completion_steps(20, 40)?).await?;
+            .is_ok());
+        autd.send(Silencer::fixed_completion_steps(20, 40)).await?;
         assert_eq!(
             Err(AUTDError::Internal(
                 AUTDInternalError::InvalidSilencerSettings
             )),
-            autd.send(SwapSegment::modulation(
+            autd.send(SwapSegment::Modulation(
                 Segment::S1,
-                TransitionMode::Immidiate
+                TransitionMode::Immediate
             ))
             .await
         );
@@ -109,15 +111,22 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
     // FocusSTM異常系
     {
         autd.send((Static::new(), Null::new())).await?;
-        autd.send(Silencer::fixed_completion_steps(10, 40)?).await?;
+        autd.send(Silencer::fixed_completion_steps(10, 40)).await?;
+        assert!(autd
+            .send(FocusSTM::from_sampling_config(
+                SamplingConfig::DivisionRaw(512 * 40),
+                (0..2).map(|_| ControlPoint::new(Vector3::zeros()).with_intensity(0x00))
+            ))
+            .await
+            .is_ok());
         assert_eq!(
-            Ok(true),
-            autd.send(
-                FocusSTM::from_sampling_config(SamplingConfig::DivisionRaw(512 * 40))
-                    .add_foci_from_iter(
-                        (0..2).map(|_| ControlPoint::new(Vector3::zeros()).with_intensity(0x00))
-                    )
-            )
+            Err(AUTDError::Internal(
+                AUTDInternalError::InvalidSilencerSettings
+            )),
+            autd.send(FocusSTM::from_sampling_config(
+                SamplingConfig::DivisionRaw(512 * 40 - 1),
+                (0..2).map(|_| ControlPoint::new(Vector3::zeros()).with_intensity(0x00))
+            ))
             .await
         );
         assert_eq!(
@@ -125,46 +134,33 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
                 AUTDInternalError::InvalidSilencerSettings
             )),
             autd.send(
-                FocusSTM::from_sampling_config(SamplingConfig::DivisionRaw(512 * 40 - 1))
-                    .add_foci_from_iter(
-                        (0..2).map(|_| ControlPoint::new(Vector3::zeros()).with_intensity(0x00))
-                    )
-            )
-            .await
-        );
-        assert_eq!(
-            Err(AUTDError::Internal(
-                AUTDInternalError::InvalidSilencerSettings
-            )),
-            autd.send(
-                FocusSTM::from_sampling_config(SamplingConfig::DivisionRaw(512 * 40 - 1))
-                    .add_foci_from_iter(
-                        (0..2).map(|_| ControlPoint::new(Vector3::zeros()).with_intensity(0x00))
-                    )
-                    .with_segment(Segment::S1, None)
+                FocusSTM::from_sampling_config(
+                    SamplingConfig::DivisionRaw(512 * 40 - 1),
+                    (0..2).map(|_| ControlPoint::new(Vector3::zeros()).with_intensity(0x00))
+                )
+                .with_segment(Segment::S1, None)
             )
             .await
         );
         autd.send((Static::new(), Null::new())).await?;
-        assert_eq!(
-            Ok(true),
-            autd.send(
-                FocusSTM::from_sampling_config(SamplingConfig::DivisionRaw(512 * 40))
-                    .add_foci_from_iter(
-                        (0..2).map(|_| ControlPoint::new(Vector3::zeros()).with_intensity(0x00))
-                    )
-                    .with_segment(Segment::S1, None)
+        assert!(autd
+            .send(
+                FocusSTM::from_sampling_config(
+                    SamplingConfig::DivisionRaw(512 * 40),
+                    (0..2).map(|_| ControlPoint::new(Vector3::zeros()).with_intensity(0x00))
+                )
+                .with_segment(Segment::S1, None)
             )
             .await
-        );
-        autd.send(Silencer::fixed_completion_steps(20, 80)?).await?;
+            .is_ok());
+        autd.send(Silencer::fixed_completion_steps(20, 80)).await?;
         assert_eq!(
             Err(AUTDError::Internal(
                 AUTDInternalError::InvalidSilencerSettings
             )),
-            autd.send(SwapSegment::focus_stm(
+            autd.send(SwapSegment::FocusSTM(
                 Segment::S1,
-                TransitionMode::Immidiate
+                TransitionMode::Immediate
             ))
             .await
         );
@@ -173,13 +169,22 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
     // GainSTM異常系
     {
         autd.send((Static::new(), Null::new())).await?;
-        autd.send(Silencer::fixed_completion_steps(10, 40)?).await?;
+        autd.send(Silencer::fixed_completion_steps(10, 40)).await?;
+        assert!(autd
+            .send(GainSTM::from_sampling_config(
+                SamplingConfig::DivisionRaw(512 * 40),
+                (0..2).map(|_| Null::new())
+            ))
+            .await
+            .is_ok());
         assert_eq!(
-            Ok(true),
-            autd.send(
-                GainSTM::from_sampling_config(SamplingConfig::DivisionRaw(512 * 40))
-                    .add_gains_from_iter((0..2).map(|_| Null::new()))
-            )
+            Err(AUTDError::Internal(
+                AUTDInternalError::InvalidSilencerSettings
+            )),
+            autd.send(GainSTM::from_sampling_config(
+                SamplingConfig::DivisionRaw(512 * 40 - 1),
+                (0..2).map(|_| Null::new())
+            ))
             .await
         );
         assert_eq!(
@@ -187,42 +192,32 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
                 AUTDInternalError::InvalidSilencerSettings
             )),
             autd.send(
-                GainSTM::from_sampling_config(SamplingConfig::DivisionRaw(512 * 40 - 1))
-                    .add_gains_from_iter((0..2).map(|_| Null::new()))
-            )
-            .await
-        );
-        assert_eq!(
-            Err(AUTDError::Internal(
-                AUTDInternalError::InvalidSilencerSettings
-            )),
-            autd.send(
-                GainSTM::from_sampling_config(SamplingConfig::DivisionRaw(512 * 40 - 1))
-                    .add_gains_from_iter((0..2).map(|_| Null::new()))
-                    .with_segment(Segment::S1, None)
+                GainSTM::from_sampling_config(
+                    SamplingConfig::DivisionRaw(512 * 40 - 1),
+                    (0..2).map(|_| Null::new())
+                )
+                .with_segment(Segment::S1, None)
             )
             .await
         );
         autd.send((Static::new(), Null::new())).await?;
-        assert_eq!(
-            Ok(true),
-            autd.send(
-                GainSTM::from_sampling_config(SamplingConfig::DivisionRaw(512 * 40))
-                    .add_gains_from_iter((0..2).map(|_| Null::new()))
-                    .with_segment(Segment::S1, None)
+        assert!(autd
+            .send(
+                GainSTM::from_sampling_config(
+                    SamplingConfig::DivisionRaw(512 * 40),
+                    (0..2).map(|_| Null::new())
+                )
+                .with_segment(Segment::S1, None)
             )
             .await
-        );
-        autd.send(Silencer::fixed_completion_steps(20, 80)?).await?;
+            .is_ok());
+        autd.send(Silencer::fixed_completion_steps(20, 80)).await?;
         assert_eq!(
             Err(AUTDError::Internal(
                 AUTDInternalError::InvalidSilencerSettings
             )),
-            autd.send(SwapSegment::gain_stm(
-                Segment::S1,
-                TransitionMode::Immidiate
-            ))
-            .await
+            autd.send(SwapSegment::GainSTM(Segment::S1, TransitionMode::Immediate))
+                .await
         );
     }
 

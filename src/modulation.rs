@@ -1,6 +1,6 @@
 use crate::print_msg_and_wait_for_key;
 
-use autd3::{derive::*, prelude::*};
+use autd3::{derive::*, driver::link::Link, prelude::*};
 
 pub async fn modulation_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
     autd.send((
@@ -18,7 +18,7 @@ pub async fn modulation_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Resul
         assert_eq!(None, state.current_stm_segment());
     });
 
-    autd.send(Static::new().with_segment(Segment::S1, Some(TransitionMode::Immidiate)))
+    autd.send(Static::new().with_segment(Segment::S1, Some(TransitionMode::Immediate)))
         .await?;
     print_msg_and_wait_for_key("AMが適用されていないこと");
     tokio::time::sleep(std::time::Duration::from_millis(100)).await;
@@ -30,9 +30,9 @@ pub async fn modulation_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Resul
         assert_eq!(None, state.current_stm_segment());
     });
 
-    autd.send(SwapSegment::modulation(
+    autd.send(SwapSegment::Modulation(
         Segment::S0,
-        TransitionMode::Immidiate,
+        TransitionMode::Immediate,
     ))
     .await?;
     print_msg_and_wait_for_key("AMが再び適用されたこと");
@@ -57,9 +57,9 @@ pub async fn modulation_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Resul
         assert_eq!(None, state.current_stm_segment());
     });
 
-    autd.send(SwapSegment::modulation(
+    autd.send(SwapSegment::Modulation(
         Segment::S1,
-        TransitionMode::Immidiate,
+        TransitionMode::Immediate,
     ))
     .await?;
     print_msg_and_wait_for_key("AMが適用されていないこと");
@@ -98,14 +98,12 @@ pub async fn modulation_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Resul
     }
 
     impl Modulation for Sawtooth {
-        fn calc(&self, geometry: &Geometry) -> Result<HashMap<usize, Vec<u8>>, AUTDInternalError> {
-            Self::transform(geometry, |_| {
-                let mut res = (0..=255u8).collect::<Vec<_>>();
-                if self.reverse {
-                    res.reverse();
-                }
-                Ok(res)
-            })
+        fn calc(&self, _: &Geometry) -> ModulationCalcResult {
+            let mut res = (0..=255u8).collect::<Vec<_>>();
+            if self.reverse {
+                res.reverse();
+            }
+            Ok(res)
         }
     }
 
@@ -148,7 +146,7 @@ pub async fn modulation_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Resul
             autd.send(
                 Static::new()
                     .with_loop_behavior(LoopBehavior::once())
-                    .with_segment(Segment::S0, Some(TransitionMode::Immidiate))
+                    .with_segment(Segment::S0, Some(TransitionMode::Immediate))
             )
             .await
         );
@@ -156,9 +154,9 @@ pub async fn modulation_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Resul
             Err(AUTDError::Internal(
                 AUTDInternalError::InvalidTransitionMode
             )),
-            autd.send(SwapSegment::modulation(
+            autd.send(SwapSegment::Modulation(
                 Segment::S0,
-                TransitionMode::Immidiate
+                TransitionMode::Immediate
             ))
             .await
         );

@@ -1,4 +1,4 @@
-use autd3::{derive::*, prelude::*};
+use autd3::{derive::*, driver::link::Link, prelude::*};
 
 pub async fn clear_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
     autd.send(Clear::new()).await?;
@@ -15,41 +15,29 @@ pub async fn clear_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()>
         Err(AUTDError::Internal(
             AUTDInternalError::InvalidSegmentTransition
         )),
-        autd.send(SwapSegment::focus_stm(
-            Segment::S0,
-            TransitionMode::SyncIdx
-        ))
-        .await
+        autd.send(SwapSegment::FocusSTM(Segment::S0, TransitionMode::SyncIdx))
+            .await
     );
     assert_eq!(
         Err(AUTDError::Internal(
             AUTDInternalError::InvalidSegmentTransition
         )),
-        autd.send(SwapSegment::focus_stm(
-            Segment::S1,
-            TransitionMode::SyncIdx
-        ))
-        .await
+        autd.send(SwapSegment::FocusSTM(Segment::S1, TransitionMode::SyncIdx))
+            .await
     );
     assert_eq!(
         Err(AUTDError::Internal(
             AUTDInternalError::InvalidSegmentTransition
         )),
-        autd.send(SwapSegment::gain_stm(
-            Segment::S0,
-            TransitionMode::SyncIdx
-        ))
-        .await
+        autd.send(SwapSegment::GainSTM(Segment::S0, TransitionMode::SyncIdx))
+            .await
     );
     assert_eq!(
         Err(AUTDError::Internal(
             AUTDInternalError::InvalidSegmentTransition
         )),
-        autd.send(SwapSegment::gain_stm(
-            Segment::S1,
-            TransitionMode::SyncIdx
-        ))
-        .await
+        autd.send(SwapSegment::GainSTM(Segment::S1, TransitionMode::SyncIdx))
+            .await
     );
 
     Ok(())
