@@ -10,7 +10,7 @@ pub async fn stm_gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
     let radius = 30.0 * mm;
     let gen_foci = || {
         (0..point_num).map(|i| {
-            let theta = 2.0 * PI * i as f64 / point_num as f64;
+            let theta = 2.0 * PI * i as f32 / point_num as f32;
             let p = radius * Vector3::new(theta.cos(), theta.sin(), 0.0);
             Focus::new(center + p).with_intensity(0xFF)
         })
@@ -115,14 +115,14 @@ pub async fn stm_gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
         Err(AUTDError::Internal(
             AUTDInternalError::InvalidSegmentTransition
         )),
-        autd.send(SwapSegment::FocusSTM(Segment::S0, TransitionMode::SyncIdx))
+        autd.send(SwapSegment::FociSTM(Segment::S0, TransitionMode::SyncIdx))
             .await
     );
     assert_eq!(
         Err(AUTDError::Internal(
             AUTDInternalError::InvalidSegmentTransition
         )),
-        autd.send(SwapSegment::FocusSTM(Segment::S1, TransitionMode::SyncIdx))
+        autd.send(SwapSegment::FociSTM(Segment::S1, TransitionMode::SyncIdx))
             .await
     );
     assert_eq!(

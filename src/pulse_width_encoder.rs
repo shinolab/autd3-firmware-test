@@ -10,23 +10,13 @@ pub async fn pwe_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
     }))
     .await?;
 
-    let mut buf = vec![0u16; 65536];
-    buf[0..255].iter_mut().for_each(|v| *v = 256 / 8);
-    buf[255..2 * 255].iter_mut().for_each(|v| *v = 256 / 8 * 2);
-    buf[2 * 255..3 * 255]
-        .iter_mut()
-        .for_each(|v| *v = 256 / 8 * 3);
-    buf[3 * 255..4 * 255]
-        .iter_mut()
-        .for_each(|v| *v = 256 / 8 * 4);
-    buf[4 * 255..].iter_mut().for_each(|v| *v = 256 / 8 * 5);
     autd.send(PulseWidthEncoder::new(|_| {
         |i| match i {
-            0..=255 => 256 / 8,
-            256..=511 => 256 / 8 * 2,
-            512..=767 => 256 / 8 * 3,
-            768..=1023 => 256 / 8 * 4,
-            1024.. => 256 / 8 * 5,
+            0 => 256 / 8,
+            1..=127 => 256 / 8 * 2,
+            128..=255 => 256 / 8 * 3,
+            256..=383 => 256 / 8 * 4,
+            _ => 256,
         }
     }))
     .await?;

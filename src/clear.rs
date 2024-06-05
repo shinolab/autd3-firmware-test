@@ -15,14 +15,14 @@ pub async fn clear_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()>
         Err(AUTDError::Internal(
             AUTDInternalError::InvalidSegmentTransition
         )),
-        autd.send(SwapSegment::FocusSTM(Segment::S0, TransitionMode::SyncIdx))
+        autd.send(SwapSegment::FociSTM(Segment::S0, TransitionMode::SyncIdx))
             .await
     );
     assert_eq!(
         Err(AUTDError::Internal(
             AUTDInternalError::InvalidSegmentTransition
         )),
-        autd.send(SwapSegment::FocusSTM(Segment::S1, TransitionMode::SyncIdx))
+        autd.send(SwapSegment::FociSTM(Segment::S1, TransitionMode::SyncIdx))
             .await
     );
     assert_eq!(

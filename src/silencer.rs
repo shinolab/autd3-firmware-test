@@ -33,12 +33,12 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
     let radius = 30.0 * mm;
     let gen_foci = || {
         (0..point_num).map(|i| {
-            let theta = 2.0 * PI * i as f64 / point_num as f64;
+            let theta = 2.0 * PI * i as f32 / point_num as f32;
             let p = radius * Vector3::new(theta.cos(), theta.sin(), 0.0);
-            ControlPoint::new(center + p).with_intensity(0xFF)
+            ControlPoint::new(center + p)
         })
     };
-    let stm = FocusSTM::from_freq(50. * Hz, gen_foci())?;
+    let stm = FociSTM::from_freq(50. * Hz, gen_foci())?;
     autd.send(stm).await?;
     print_msg_and_wait_for_key("50HzのSTMが適用されていること");
 
@@ -108,14 +108,14 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
         );
     }
 
-    // FocusSTM異常系
+    // FociSTM異常系
     {
         autd.send((Static::new(), Null::new())).await?;
         autd.send(Silencer::fixed_completion_steps(10, 40)).await?;
         assert!(autd
-            .send(FocusSTM::from_sampling_config(
+            .send(FociSTM::from_sampling_config(
                 SamplingConfig::DivisionRaw(512 * 40),
-                (0..2).map(|_| ControlPoint::new(Vector3::zeros()).with_intensity(0x00))
+                (0..2).map(|_| (ControlPoint::new(Vector3::zeros()), 0x00))
             ))
             .await
             .is_ok());
@@ -123,9 +123,9 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
             Err(AUTDError::Internal(
                 AUTDInternalError::InvalidSilencerSettings
             )),
-            autd.send(FocusSTM::from_sampling_config(
+            autd.send(FociSTM::from_sampling_config(
                 SamplingConfig::DivisionRaw(512 * 40 - 1),
-                (0..2).map(|_| ControlPoint::new(Vector3::zeros()).with_intensity(0x00))
+                (0..2).map(|_| (ControlPoint::new(Vector3::zeros()), 0x00))
             ))
             .await
         );
@@ -134,9 +134,9 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
                 AUTDInternalError::InvalidSilencerSettings
             )),
             autd.send(
-                FocusSTM::from_sampling_config(
+                FociSTM::from_sampling_config(
                     SamplingConfig::DivisionRaw(512 * 40 - 1),
-                    (0..2).map(|_| ControlPoint::new(Vector3::zeros()).with_intensity(0x00))
+                    (0..2).map(|_| (ControlPoint::new(Vector3::zeros()), 0x00))
                 )
                 .with_segment(Segment::S1, None)
             )
@@ -145,9 +145,9 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
         autd.send((Static::new(), Null::new())).await?;
         assert!(autd
             .send(
-                FocusSTM::from_sampling_config(
+                FociSTM::from_sampling_config(
                     SamplingConfig::DivisionRaw(512 * 40),
-                    (0..2).map(|_| ControlPoint::new(Vector3::zeros()).with_intensity(0x00))
+                    (0..2).map(|_| (ControlPoint::new(Vector3::zeros()), 0x00))
                 )
                 .with_segment(Segment::S1, None)
             )
@@ -158,11 +158,8 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
             Err(AUTDError::Internal(
                 AUTDInternalError::InvalidSilencerSettings
             )),
-            autd.send(SwapSegment::FocusSTM(
-                Segment::S1,
-                TransitionMode::Immediate
-            ))
-            .await
+            autd.send(SwapSegment::FociSTM(Segment::S1, TransitionMode::Immediate))
+                .await
         );
     }
 

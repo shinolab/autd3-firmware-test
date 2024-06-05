@@ -3,7 +3,6 @@ mod debug;
 mod force_fan;
 mod gain;
 mod modulation;
-mod phase_filter;
 mod pulse_width_encoder;
 mod silencer;
 mod stm_focus;
@@ -93,7 +92,7 @@ async fn run<B: LinkBuilder>(b: B, freq: u32) -> Result<()> {
         ("Modulationテスト", |autd| {
             Box::pin(modulation::modulation_test(autd))
         }),
-        ("FocusSTMテスト", |autd| {
+        ("FociSTMテスト", |autd| {
             Box::pin(stm_focus::stm_focus_test(autd))
         }),
         ("GainSTMテスト", |autd| {
@@ -101,9 +100,6 @@ async fn run<B: LinkBuilder>(b: B, freq: u32) -> Result<()> {
         }),
         ("Silencerテスト", |autd| {
             Box::pin(silencer::silencer_test(autd))
-        }),
-        ("PhaseFilterテスト", |autd| {
-            Box::pin(phase_filter::phase_filter_test(autd))
         }),
         ("ForceFanテスト", |autd| {
             Box::pin(force_fan::force_fan_test(autd))
