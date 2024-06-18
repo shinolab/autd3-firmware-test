@@ -16,8 +16,8 @@ pub async fn debug_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()>
             move |tr| match (dev_idx, tr.idx()) {
                 (0, 0) => Drive::new(Phase::new(0), EmitIntensity::new(0xFF)),
                 (0, 248) => Drive::new(Phase::new(0x80), EmitIntensity::new(0x80)),
-                (1, 0) => Drive::new(Phase::new(0x80), EmitIntensity::new(0xFF)),
-                (1, 248) => Drive::new(Phase::new(0), EmitIntensity::new(0x80)),
+                (_, 0) => Drive::new(Phase::new(0x80), EmitIntensity::new(0xFF)),
+                (_, 248) => Drive::new(Phase::new(0), EmitIntensity::new(0x80)),
                 _ => Drive::null(),
             }
         }),
@@ -48,8 +48,8 @@ pub async fn debug_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()>
     autd.send(DebugSettings::new(|dev, gpio| match (dev.idx(), gpio) {
         (0, GPIOOut::O0) => DebugType::BaseSignal,
         (0, GPIOOut::O1) => DebugType::PwmOut(&dev[0]),
-        (1, GPIOOut::O0) => DebugType::BaseSignal,
-        (1, GPIOOut::O1) => DebugType::PwmOut(&dev[248]),
+        (_, GPIOOut::O0) => DebugType::BaseSignal,
+        (_, GPIOOut::O1) => DebugType::PwmOut(&dev[248]),
         _ => DebugType::None,
     }))
     .await?;
@@ -58,8 +58,8 @@ pub async fn debug_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()>
     autd.send(DebugSettings::new(|dev, gpio| match (dev.idx(), gpio) {
         (0, GPIOOut::O0) => DebugType::BaseSignal,
         (0, GPIOOut::O1) => DebugType::PwmOut(&dev[1]),
-        (1, GPIOOut::O0) => DebugType::BaseSignal,
-        (1, GPIOOut::O1) => DebugType::PwmOut(&dev[2]),
+        (_, GPIOOut::O0) => DebugType::BaseSignal,
+        (_, GPIOOut::O1) => DebugType::PwmOut(&dev[2]),
         _ => DebugType::None,
     }))
     .await?;

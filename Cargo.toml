@@ -11,3 +11,5 @@ autd3-link-twincat = { path = "autd3/autd3-link-twincat" }
 autd3-link-simulator = { path = "autd3/autd3-link-simulator" }
 colored = "2.1.0"
 tokio = { version = "1.37.0", features = ["full"] }
+tracing-subscriber = "0.3.18"
+tracing = "0.1.40"

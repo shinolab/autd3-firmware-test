@@ -27,8 +27,8 @@ pub async fn pwe_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
             move |tr| match (dev_idx, tr.idx()) {
                 (0, 0) => Drive::new(Phase::new(0), EmitIntensity::new(0)),
                 (0, 248) => Drive::new(Phase::new(0), EmitIntensity::new(1)),
-                (1, 0) => Drive::new(Phase::new(0), EmitIntensity::new(2)),
-                (1, 248) => Drive::new(Phase::new(0), EmitIntensity::new(3)),
+                (_, 0) => Drive::new(Phase::new(0), EmitIntensity::new(2)),
+                (_, 248) => Drive::new(Phase::new(0), EmitIntensity::new(3)),
                 _ => Drive::null(),
             }
         }),

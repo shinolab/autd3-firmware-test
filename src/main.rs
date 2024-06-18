@@ -143,6 +143,10 @@ async fn run<B: LinkBuilder>(b: B, freq: u32) -> Result<()> {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .init();
+
     print_check("2台の最新ファームウェアを書き込んだデバイスが接続されていること");
     print_check("各デバイスのGPIO[0]ピンとGPIO[1]ピンにオシロスコープを接続していること");
     print_check("各デバイスのGPIOピンに出力がないこと");
