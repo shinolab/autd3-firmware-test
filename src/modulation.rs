@@ -98,7 +98,7 @@ pub async fn modulation_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Resul
     }
 
     impl Modulation for Sawtooth {
-        fn calc(&self, _: &Geometry) -> ModulationCalcResult {
+        fn calc(&self) -> ModulationCalcResult {
             let mut res = (0..=255u8).collect::<Vec<_>>();
             if self.reverse {
                 res.reverse();

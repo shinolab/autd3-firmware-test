@@ -35,9 +35,10 @@ fn print_msg_and_wait_for_key(msg: &str) {
 }
 
 async fn run<B: LinkBuilder>(b: B, freq: u32) -> Result<()> {
+    std::env::set_var("AUTD3_ULTRASOUND_FREQ", freq.to_string());
+
     let mut autd =
         Controller::builder([AUTD3::new(Vector3::zeros()), AUTD3::new(Vector3::zeros())])
-            .with_ultrasound_freq(freq * Hz)
             .open(b)
             .await?;
 
