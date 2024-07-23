@@ -5,7 +5,7 @@ use autd3::{derive::*, driver::link::Link, prelude::*};
 pub async fn modulation_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
     autd.send((
         Sine::new(150. * Hz),
-        Focus::new(autd.geometry.center() + 150. * Vector3::z()),
+        Focus::new(autd.geometry().center() + 150. * Vector3::z()),
     ))
     .await?;
     print_msg_and_wait_for_key("各デバイスの中心から150mm直上に焦点が生成されていること");

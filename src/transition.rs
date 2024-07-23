@@ -12,7 +12,7 @@ use autd3::{
 };
 
 async fn transition_test_focus_stm<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
-    let center = autd.geometry.center() + Vector3::new(0., 0., 150.0 * mm);
+    let center = autd.geometry().center() + Vector3::new(0., 0., 150.0 * mm);
     let point_num = 200;
     let radius = 30.0 * mm;
     let gen_foci = || {
@@ -94,7 +94,7 @@ async fn transition_test_focus_stm<L: Link>(autd: &mut Controller<L>) -> anyhow:
 }
 
 async fn transition_test_gain_stm<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
-    let center = autd.geometry.center() + Vector3::new(0., 0., 150.0 * mm);
+    let center = autd.geometry().center() + Vector3::new(0., 0., 150.0 * mm);
     let point_num = 200;
     let radius = 30.0 * mm;
     let gen_foci = || {

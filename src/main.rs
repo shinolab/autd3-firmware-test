@@ -34,9 +34,7 @@ fn print_msg_and_wait_for_key(msg: &str) {
     std::io::stdin().read_line(&mut String::new()).unwrap();
 }
 
-async fn run<B: LinkBuilder>(b: B, freq: u32) -> Result<()> {
-    std::env::set_var("AUTD3_ULTRASOUND_FREQ", freq.to_string());
-
+async fn run<B: LinkBuilder>(b: B) -> Result<()> {
     let mut autd =
         Controller::builder([AUTD3::new(Vector3::zeros()), AUTD3::new(Vector3::zeros())])
             .open(b)
@@ -50,7 +48,7 @@ async fn run<B: LinkBuilder>(b: B, freq: u32) -> Result<()> {
     print_check("各デバイスのGPIO[0]ピンの出力が同期していること");
 
     let firmware_version = autd.firmware_version().await?;
-    assert_eq!(autd.geometry.num_devices(), firmware_version.len());
+    assert_eq!(autd.geometry().num_devices(), firmware_version.len());
     firmware_version.iter().for_each(|firm_info| {
         assert_eq!(
             FirmwareVersion::LATEST_VERSION_NUM_MAJOR,
@@ -151,14 +149,6 @@ async fn main() -> Result<()> {
     print_check("2台の最新ファームウェアを書き込んだデバイスが接続されていること");
     print_check("各デバイスのGPIO[0]ピンとGPIO[1]ピンにオシロスコープを接続していること");
     print_check("各デバイスのGPIOピンに出力がないこと");
-    print!("{} (デフォルトは40000): ", "周波数を入力".green().bold());
-    io::stdout().flush()?;
-    let mut s = String::new();
-    io::stdin().read_line(&mut s)?;
-    let freq = match s.trim().parse::<u32>() {
-        Ok(i) => i,
-        _ => 40000,
-    };
 
     let links = vec!["SOEM", "TwinCAT", "Simulator", "Audit"];
     links.iter().enumerate().for_each(|(i, link)| {
@@ -182,13 +172,12 @@ async fn main() -> Result<()> {
                             eprintln!("StateChanged [{}]: {}", slave, status)
                         }
                     }),
-                    freq,
                 )
                 .await
             }
-            1 => run(autd3_link_twincat::TwinCAT::builder(), freq).await,
-            2 => run(autd3_link_simulator::Simulator::builder(8080), freq).await,
-            3 => run(autd3::link::Audit::builder(), freq).await,
+            1 => run(autd3_link_twincat::TwinCAT::builder()).await,
+            2 => run(autd3_link_simulator::Simulator::builder(8080)).await,
+            3 => run(autd3::link::Audit::builder()).await,
             _ => unreachable!(),
         },
         _ => {
@@ -201,7 +190,6 @@ async fn main() -> Result<()> {
                     }
                     Status::StateChanged => eprintln!("StateChanged [{}]: {}", slave, status),
                 }),
-                freq,
             )
             .await
         }

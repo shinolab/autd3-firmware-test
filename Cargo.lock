@@ -88,11 +88,11 @@ dependencies = [
 
 [[package]]
 name = "autd3"
-version = "26.0.0-beta.1"
+version = "26.0.0"
 dependencies = [
  "autd3-driver",
  "autd3-firmware-emulator",
- "bitvec",
+ "bit-vec",
  "derivative",
  "derive_more",
  "num",
@@ -103,7 +103,7 @@ dependencies = [
 
 [[package]]
 name = "autd3-derive"
-version = "26.0.0-beta.1"
+version = "26.0.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -113,14 +113,13 @@ dependencies = [
 
 [[package]]
 name = "autd3-driver"
-version = "26.0.0-beta.1"
+version = "26.0.0"
 dependencies = [
  "autd3-derive",
+ "bit-vec",
  "bitfield-struct",
  "bitflags 2.5.0",
- "bitvec",
  "derive_more",
- "is_sorted",
  "itertools",
  "nalgebra",
  "num-complex",
@@ -135,7 +134,7 @@ dependencies = [
 
 [[package]]
 name = "autd3-firmware-emulator"
-version = "26.0.0-beta.1"
+version = "26.0.0"
 dependencies = [
  "autd3-driver",
  "num-integer",
@@ -145,7 +144,7 @@ dependencies = [
 
 [[package]]
 name = "autd3-firmware-test"
-version = "8.0.0"
+version = "9.0.0"
 dependencies = [
  "anyhow",
  "autd3",
@@ -160,7 +159,7 @@ dependencies = [
 
 [[package]]
 name = "autd3-link-simulator"
-version = "26.0.0-beta.1"
+version = "26.0.0"
 dependencies = [
  "autd3-driver",
  "autd3-protobuf",
@@ -170,7 +169,7 @@ dependencies = [
 
 [[package]]
 name = "autd3-link-soem"
-version = "26.0.0-beta.1"
+version = "26.0.0"
 dependencies = [
  "async-channel",
  "autd3-driver",
@@ -189,7 +188,7 @@ dependencies = [
 
 [[package]]
 name = "autd3-link-twincat"
-version = "26.0.0-beta.1"
+version = "26.0.0"
 dependencies = [
  "autd3-driver",
  "libloading",
@@ -198,7 +197,7 @@ dependencies = [
 
 [[package]]
 name = "autd3-protobuf"
-version = "26.0.0-beta.1"
+version = "26.0.0"
 dependencies = [
  "autd3-driver",
  "prost",
@@ -279,6 +278,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9d297deb1925b89f2ccc13d7635fa0714f12c87adce1c75356b39ca9b7178567"
 
 [[package]]
+name = "bit-vec"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5e764a1d40d510daf35e07be9eb06e75770908c27d411ee6c92109c9840eaaf7"
+
+[[package]]
 name = "bitfield-struct"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -300,18 +305,6 @@ name = "bitflags"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf4b9d6a944f767f8e5e0db018570623c85f3d925ac718db4e06d0187adb21c1"
-
-[[package]]
-name = "bitvec"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1bc2832c24239b0141d5674bb9174f9d68a8b5b3f2753311927c172ca46f7e9c"
-dependencies = [
- "funty",
- "radium",
- "tap",
- "wyz",
-]
 
 [[package]]
 name = "bytemuck"
@@ -463,12 +456,6 @@ name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
-
-[[package]]
-name = "funty"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e6d5a32815ae3f33302d95fdcb2ce17862f8c65363dcfd29360480ba1001fc9c"
 
 [[package]]
 name = "futures-channel"
@@ -658,12 +645,6 @@ dependencies = [
  "equivalent",
  "hashbrown 0.14.5",
 ]
-
-[[package]]
-name = "is_sorted"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "357376465c37db3372ef6a00585d336ed3d0f11d4345eef77ebcb05865392b21"
 
 [[package]]
 name = "itertools"
@@ -1053,12 +1034,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "radium"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc33ff2d4973d518d823d61aa239014831e521c75da58e3df4840d3f47749d09"
-
-[[package]]
 name = "rand"
 version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1303,12 +1278,6 @@ name = "ta"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "609409d472a0a7d8d4dd9e19891bbdef546b9dce670c3057d0e02192dc541226"
-
-[[package]]
-name = "tap"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "55937e1799185b12863d447f42597ed69d9928686b8d88a1df17376a097d8369"
 
 [[package]]
 name = "thiserror"
@@ -1835,12 +1804,3 @@ name = "windows_x86_64_msvc"
 version = "0.52.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bec47e5bfd1bff0eeaf6d8b485cc1074891a197ab4225d504cb7a1ab88b02bf0"
-
-[[package]]
-name = "wyz"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "05f360fc0b24296329c78fda852a1e9ae82de9cf7b27dae4b7f62f118f77b9ed"
-dependencies = [
- "tap",
-]
