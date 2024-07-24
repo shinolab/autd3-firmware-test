@@ -25,11 +25,11 @@ pub async fn pwe_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
         autd3::gain::Custom::new(|dev| {
             let dev_idx = dev.idx();
             move |tr| match (dev_idx, tr.idx()) {
-                (0, 0) => Drive::new(Phase::new(0), EmitIntensity::new(0)),
-                (0, 248) => Drive::new(Phase::new(0), EmitIntensity::new(1)),
-                (_, 0) => Drive::new(Phase::new(0), EmitIntensity::new(2)),
-                (_, 248) => Drive::new(Phase::new(0), EmitIntensity::new(3)),
-                _ => Drive::null(),
+                (0, 0) => (Phase::new(0), EmitIntensity::new(0)),
+                (0, 248) => (Phase::new(0), EmitIntensity::new(1)),
+                (_, 0) => (Phase::new(0), EmitIntensity::new(2)),
+                (_, 248) => (Phase::new(0), EmitIntensity::new(3)),
+                _ => (Phase::new(0), EmitIntensity::new(0)),
             }
         }),
     ))
@@ -37,8 +37,11 @@ pub async fn pwe_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
     print_msg_and_wait_for_key("0番目のデバイスのGPIO[0]出力, 0番目のデバイスのGPIO[1]出力, 1番目のデバイスのGPIO[0]出力, 1番目のデバイスのGPIO[1]出力矩形波のDuty比がそれぞれ6.25, 12.5%, 18.75%, 25%であること");
 
     autd.send(PulseWidthEncoder::new(|_| |_| 0)).await?;
-    autd.send((Static::with_intensity(0xFF), Uniform::new(0xFF)))
-        .await?;
+    autd.send((
+        Static::with_intensity(0xFF),
+        Uniform::new(EmitIntensity::MAX),
+    ))
+    .await?;
     print_msg_and_wait_for_key("各デバイスのGPIO[0]とGPIO[1]ピンに出力がないこと");
 
     autd.send(PulseWidthEncoder::default()).await?;
@@ -47,9 +50,9 @@ pub async fn pwe_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
         autd3::gain::Custom::new(|dev| {
             let dev_idx = dev.idx();
             move |tr| match (dev_idx, tr.idx()) {
-                (_, 0) => Drive::new(Phase::new(0), EmitIntensity::new(0)),
-                (_, 248) => Drive::new(Phase::new(0), EmitIntensity::new(255)),
-                _ => Drive::null(),
+                (_, 0) => (Phase::new(0), EmitIntensity::new(0)),
+                (_, 248) => (Phase::new(0), EmitIntensity::new(255)),
+                _ => (Phase::new(0), EmitIntensity::new(0)),
             }
         }),
     ))

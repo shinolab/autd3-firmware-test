@@ -14,11 +14,11 @@ pub async fn debug_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()>
         autd3::gain::Custom::new(|dev| {
             let dev_idx = dev.idx();
             move |tr| match (dev_idx, tr.idx()) {
-                (0, 0) => Drive::new(Phase::new(0), EmitIntensity::new(0xFF)),
-                (0, 248) => Drive::new(Phase::new(0x80), EmitIntensity::new(0x80)),
-                (_, 0) => Drive::new(Phase::new(0x80), EmitIntensity::new(0xFF)),
-                (_, 248) => Drive::new(Phase::new(0), EmitIntensity::new(0x80)),
-                _ => Drive::null(),
+                (0, 0) => (Phase::new(0), EmitIntensity::new(0xFF)),
+                (0, 248) => (Phase::new(0x80), EmitIntensity::new(0x80)),
+                (_, 0) => (Phase::new(0x80), EmitIntensity::new(0xFF)),
+                (_, 248) => (Phase::new(0), EmitIntensity::new(0x80)),
+                _ => (Phase::new(0), EmitIntensity::new(0)),
             }
         }),
     ))

@@ -176,7 +176,12 @@ async fn main() -> Result<()> {
                 .await
             }
             1 => run(autd3_link_twincat::TwinCAT::builder()).await,
-            2 => run(autd3_link_simulator::Simulator::builder(8080)).await,
+            2 => {
+                run(autd3_link_simulator::Simulator::builder(
+                    "[::1]:8080".parse()?,
+                ))
+                .await
+            }
             3 => run(autd3::link::Audit::builder()).await,
             _ => unreachable!(),
         },

@@ -23,7 +23,7 @@ async fn transition_test_focus_stm<L: Link>(autd: &mut Controller<L>) -> anyhow:
         })
     };
 
-    let stm = FociSTM::from_freq(0.5 * Hz, gen_foci())?;
+    let stm = FociSTM::new(0.5 * Hz, gen_foci())?;
     autd.send(stm).await?;
     print_msg_and_wait_for_key(
         "各デバイスの中心から150mm直上を中心に半径30mmの円周上に0.5HzのSTMが適用されていること",
@@ -31,7 +31,7 @@ async fn transition_test_focus_stm<L: Link>(autd: &mut Controller<L>) -> anyhow:
 
     let mut foci = gen_foci().rev().collect::<Vec<_>>();
     foci[point_num - 1] = foci[point_num - 1].clone().with_intensity(0x00);
-    let stm = FociSTM::from_freq(0.5 * Hz, foci)?
+    let stm = FociSTM::new(0.5 * Hz, foci)?
         .with_loop_behavior(LoopBehavior::once())
         .with_segment(Segment::S1, None);
     autd.send(stm).await?;
@@ -57,7 +57,7 @@ async fn transition_test_focus_stm<L: Link>(autd: &mut Controller<L>) -> anyhow:
     print_msg_and_wait_for_key("");
 
     autd.send(Sine::new(150. * Hz)).await?;
-    let stm = FociSTM::from_freq(
+    let stm = FociSTM::new(
         0.5 * Hz,
         [
             ControlPoint::new(center + Vector3::new(30., 0., 0.)),
@@ -65,7 +65,7 @@ async fn transition_test_focus_stm<L: Link>(autd: &mut Controller<L>) -> anyhow:
         ],
     )?;
     autd.send(stm).await?;
-    let stm = FociSTM::from_freq(
+    let stm = FociSTM::new(
         0.5 * Hz,
         [
             ControlPoint::new(center + Vector3::new(-30., 0., 0.)),
@@ -78,7 +78,7 @@ async fn transition_test_focus_stm<L: Link>(autd: &mut Controller<L>) -> anyhow:
 
     {
         autd.send((Static::new(), Null::new())).await?;
-        let stm = FociSTM::from_freq(
+        let stm = FociSTM::new(
             0.5 * Hz,
             (0..2).map(|_| (ControlPoint::new(Vector3::zeros()), 0x00)),
         )?
@@ -105,7 +105,7 @@ async fn transition_test_gain_stm<L: Link>(autd: &mut Controller<L>) -> anyhow::
         })
     };
 
-    let stm = GainSTM::from_freq(0.5 * Hz, gen_foci())?;
+    let stm = GainSTM::new(0.5 * Hz, gen_foci())?;
     autd.send(stm).await?;
     print_msg_and_wait_for_key(
         "各デバイスの中心から150mm直上を中心に半径30mmの円周上に0.5HzのSTMが適用されていること",
@@ -113,7 +113,7 @@ async fn transition_test_gain_stm<L: Link>(autd: &mut Controller<L>) -> anyhow::
 
     let mut foci = gen_foci().rev().collect::<Vec<_>>();
     foci[point_num - 1] = foci[point_num - 1].clone().with_intensity(0x00);
-    let stm = GainSTM::from_freq(0.5 * Hz, foci)?
+    let stm = GainSTM::new(0.5 * Hz, foci)?
         .with_loop_behavior(LoopBehavior::once())
         .with_segment(Segment::S1, None);
     autd.send(stm).await?;
@@ -139,7 +139,7 @@ async fn transition_test_gain_stm<L: Link>(autd: &mut Controller<L>) -> anyhow::
     print_msg_and_wait_for_key("");
 
     autd.send(Sine::new(150. * Hz)).await?;
-    let stm = GainSTM::from_freq(
+    let stm = GainSTM::new(
         0.5 * Hz,
         [
             Focus::new(center + Vector3::new(30., 0., 0.)).with_intensity(0xFF),
@@ -147,7 +147,7 @@ async fn transition_test_gain_stm<L: Link>(autd: &mut Controller<L>) -> anyhow::
         ],
     )?;
     autd.send(stm).await?;
-    let stm = GainSTM::from_freq(
+    let stm = GainSTM::new(
         0.5 * Hz,
         [
             Focus::new(center + Vector3::new(-30., 0., 0.)).with_intensity(0xFF),
@@ -160,7 +160,7 @@ async fn transition_test_gain_stm<L: Link>(autd: &mut Controller<L>) -> anyhow::
 
     {
         autd.send((Static::new(), Null::new())).await?;
-        let stm = GainSTM::from_freq(0.5 * Hz, (0..2).map(|_| Null::new()))?
+        let stm = GainSTM::new(0.5 * Hz, (0..2).map(|_| Null::new()))?
             .with_loop_behavior(LoopBehavior::once())
             .with_segment(Segment::S1, Some(TransitionMode::SysTime(DcSysTime::now())));
         assert_eq!(

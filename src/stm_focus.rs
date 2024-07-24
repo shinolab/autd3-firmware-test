@@ -23,7 +23,7 @@ pub async fn stm_focus_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result
         })
     };
 
-    let stm = FociSTM::from_freq(0.5 * Hz, gen_foci())?;
+    let stm = FociSTM::new(0.5 * Hz, gen_foci())?;
     autd.send(stm).await?;
     print_msg_and_wait_for_key(
         "各デバイスの中心から150mm直上を中心に半径30mmの円周上に0.5HzのSTMが適用されていること",
@@ -37,7 +37,7 @@ pub async fn stm_focus_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result
         assert_eq!(Some(Segment::S0), state.current_stm_segment());
     });
 
-    let stm = FociSTM::from_freq(1. * Hz, gen_foci())?;
+    let stm = FociSTM::new(1. * Hz, gen_foci())?;
     autd.send(stm.with_segment(Segment::S1, Some(TransitionMode::Immediate)))
         .await?;
     print_msg_and_wait_for_key("STM周波数が1Hzに変更されたこと");
@@ -64,7 +64,7 @@ pub async fn stm_focus_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result
 
     let mut foci = gen_foci().rev().collect::<Vec<_>>();
     foci[point_num - 1] = foci[point_num - 1].clone().with_intensity(0x00);
-    let stm = FociSTM::from_freq(0.5 * Hz, foci)?
+    let stm = FociSTM::new(0.5 * Hz, foci)?
         .with_loop_behavior(LoopBehavior::once())
         .with_segment(Segment::S1, None);
     autd.send(stm).await?;
@@ -89,7 +89,7 @@ pub async fn stm_focus_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result
         assert_eq!(Some(Segment::S1), state.current_stm_segment());
     });
 
-    let stm = FociSTM::from_freq(
+    let stm = FociSTM::new(
         0.5 * Hz,
         (0..point_num).map(|i| {
             let theta = 2.0 * PI * i as f32 / point_num as f32;
@@ -125,7 +125,7 @@ pub async fn stm_focus_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result
             AUTDInternalError::InvalidTransitionMode
         )),
         autd.send(
-            FociSTM::from_freq(0.5 * Hz, gen_foci())?
+            FociSTM::new(0.5 * Hz, gen_foci())?
                 .with_segment(Segment::S1, Some(TransitionMode::SyncIdx))
         )
         .await
@@ -135,7 +135,7 @@ pub async fn stm_focus_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result
             AUTDInternalError::InvalidTransitionMode
         )),
         autd.send(
-            FociSTM::from_freq(0.5 * Hz, gen_foci())?
+            FociSTM::new(0.5 * Hz, gen_foci())?
                 .with_loop_behavior(LoopBehavior::once())
                 .with_segment(Segment::S0, Some(TransitionMode::Immediate))
         )

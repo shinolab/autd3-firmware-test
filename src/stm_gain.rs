@@ -16,7 +16,7 @@ pub async fn stm_gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
         })
     };
 
-    let stm = GainSTM::from_freq(0.5 * Hz, gen_foci())?;
+    let stm = GainSTM::new(0.5 * Hz, gen_foci())?;
     autd.send(stm).await?;
     print_msg_and_wait_for_key(
         "各デバイスの中心から150mm直上を中心に半径30mmの円周上に0.5HzのSTMが適用されていること",
@@ -30,7 +30,7 @@ pub async fn stm_gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
         assert_eq!(Some(Segment::S0), state.current_stm_segment());
     });
 
-    let stm = GainSTM::from_freq(1. * Hz, gen_foci())?;
+    let stm = GainSTM::new(1. * Hz, gen_foci())?;
     autd.send(stm.with_segment(Segment::S1, Some(TransitionMode::Immediate)))
         .await?;
     print_msg_and_wait_for_key("STM周波数が1Hzに変更されたこと");
@@ -57,7 +57,7 @@ pub async fn stm_gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
 
     let mut foci = gen_foci().rev().collect::<Vec<_>>();
     foci[point_num - 1] = Focus::new(*foci[point_num - 1].pos()).with_intensity(0x00);
-    let stm = GainSTM::from_freq(0.5 * Hz, foci)?
+    let stm = GainSTM::new(0.5 * Hz, foci)?
         .with_loop_behavior(LoopBehavior::once())
         .with_segment(Segment::S1, None);
     autd.send(stm).await?;
@@ -87,7 +87,7 @@ pub async fn stm_gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
             AUTDInternalError::InvalidTransitionMode
         )),
         autd.send(
-            GainSTM::from_freq(0.5 * Hz, gen_foci())?
+            GainSTM::new(0.5 * Hz, gen_foci())?
                 .with_segment(Segment::S1, Some(TransitionMode::SyncIdx))
         )
         .await
@@ -97,7 +97,7 @@ pub async fn stm_gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
             AUTDInternalError::InvalidTransitionMode
         )),
         autd.send(
-            GainSTM::from_freq(0.5 * Hz, gen_foci())?
+            GainSTM::new(0.5 * Hz, gen_foci())?
                 .with_loop_behavior(LoopBehavior::once())
                 .with_segment(Segment::S0, Some(TransitionMode::Immediate))
         )

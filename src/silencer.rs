@@ -4,7 +4,11 @@ use crate::print_msg_and_wait_for_key;
 
 use autd3::{
     derive::*,
-    driver::{defined::ControlPoint, link::Link},
+    driver::{
+        defined::ControlPoint,
+        firmware::fpga::{SILENCER_STEPS_INTENSITY_DEFAULT, SILENCER_STEPS_PHASE_DEFAULT},
+        link::Link,
+    },
     prelude::*,
 };
 
@@ -20,13 +24,21 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
         .await?;
         print_msg_and_wait_for_key("150HzのAMが適用されていること");
 
-        autd.send(Silencer::default() * 2).await?;
+        autd.send(Silencer::from_completion_time(
+            ULTRASOUND_PERIOD * SILENCER_STEPS_INTENSITY_DEFAULT * 2,
+            ULTRASOUND_PERIOD * SILENCER_STEPS_PHASE_DEFAULT * 2,
+        ))
+        .await?;
         print_msg_and_wait_for_key("ノイズが小さくなったこと");
 
         autd.send(Silencer::default()).await?;
         print_msg_and_wait_for_key("ノイズが大きくなったこと");
 
-        autd.send(Silencer::default() / 2).await?;
+        autd.send(Silencer::from_completion_time(
+            ULTRASOUND_PERIOD * SILENCER_STEPS_INTENSITY_DEFAULT / 2,
+            ULTRASOUND_PERIOD * SILENCER_STEPS_PHASE_DEFAULT / 2,
+        ))
+        .await?;
         print_msg_and_wait_for_key("ノイズが大きくなったこと");
 
         autd.send(Silencer::disable()).await?;
@@ -46,17 +58,25 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
                 ControlPoint::new(center + p)
             })
         };
-        let stm = FociSTM::from_freq(50. * Hz, gen_foci())?;
+        let stm = FociSTM::new(50. * Hz, gen_foci())?;
         autd.send(stm).await?;
         print_msg_and_wait_for_key("50HzのSTMが適用されていること");
 
-        autd.send(Silencer::default() * 2).await?;
+        autd.send(Silencer::from_completion_time(
+            ULTRASOUND_PERIOD * SILENCER_STEPS_INTENSITY_DEFAULT * 2,
+            ULTRASOUND_PERIOD * SILENCER_STEPS_PHASE_DEFAULT * 2,
+        ))
+        .await?;
         print_msg_and_wait_for_key("ノイズが小さくなったこと");
 
         autd.send(Silencer::default()).await?;
         print_msg_and_wait_for_key("ノイズが大きくなったこと");
 
-        autd.send(Silencer::default() / 2).await?;
+        autd.send(Silencer::from_completion_time(
+            ULTRASOUND_PERIOD * SILENCER_STEPS_INTENSITY_DEFAULT / 2,
+            ULTRASOUND_PERIOD * SILENCER_STEPS_PHASE_DEFAULT / 2,
+        ))
+        .await?;
         print_msg_and_wait_for_key("ノイズが大きくなったこと");
 
         autd.send(Silencer::disable()).await?;
@@ -66,7 +86,11 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
     // Modulation異常系
     {
         autd.send((Static::new(), Null::new())).await?;
-        autd.send(Silencer::from_completion_steps(10, 40)).await?;
+        autd.send(Silencer::from_completion_time(
+            ULTRASOUND_PERIOD * 10,
+            ULTRASOUND_PERIOD * 40,
+        ))
+        .await?;
         assert!(autd
             .send(
                 Sine::from_freq_nearest(100. * Hz)
@@ -104,7 +128,11 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
             )
             .await
             .is_ok());
-        autd.send(Silencer::from_completion_steps(20, 40)).await?;
+        autd.send(Silencer::from_completion_time(
+            ULTRASOUND_PERIOD * 20,
+            ULTRASOUND_PERIOD * 40,
+        ))
+        .await?;
         assert_eq!(
             Err(AUTDError::Internal(
                 AUTDInternalError::InvalidSilencerSettings
@@ -120,22 +148,26 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
     // FociSTM異常系
     {
         autd.send((Static::new(), Null::new())).await?;
-        autd.send(Silencer::from_completion_steps(10, 40)).await?;
+        autd.send(Silencer::from_completion_time(
+            ULTRASOUND_PERIOD * 10,
+            ULTRASOUND_PERIOD * 40,
+        ))
+        .await?;
         assert!(autd
-            .send(FociSTM::from_sampling_config(
+            .send(FociSTM::new(
                 SamplingConfig::Division(NonZeroU16::new(40).unwrap()),
                 (0..2).map(|_| (ControlPoint::new(Vector3::zeros()), 0x00))
-            ))
+            )?)
             .await
             .is_ok());
         assert_eq!(
             Err(AUTDError::Internal(
                 AUTDInternalError::InvalidSilencerSettings
             )),
-            autd.send(FociSTM::from_sampling_config(
+            autd.send(FociSTM::new(
                 SamplingConfig::Division(NonZeroU16::new(39).unwrap()),
                 (0..2).map(|_| (ControlPoint::new(Vector3::zeros()), 0x00))
-            ))
+            )?)
             .await
         );
         assert_eq!(
@@ -143,10 +175,10 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
                 AUTDInternalError::InvalidSilencerSettings
             )),
             autd.send(
-                FociSTM::from_sampling_config(
+                FociSTM::new(
                     SamplingConfig::Division(NonZeroU16::new(39).unwrap()),
                     (0..2).map(|_| (ControlPoint::new(Vector3::zeros()), 0x00))
-                )
+                )?
                 .with_segment(Segment::S1, None)
             )
             .await
@@ -154,15 +186,19 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
         autd.send((Static::new(), Null::new())).await?;
         assert!(autd
             .send(
-                FociSTM::from_sampling_config(
+                FociSTM::new(
                     SamplingConfig::Division(NonZeroU16::new(40).unwrap()),
                     (0..2).map(|_| (ControlPoint::new(Vector3::zeros()), 0x00))
-                )
+                )?
                 .with_segment(Segment::S1, None)
             )
             .await
             .is_ok());
-        autd.send(Silencer::from_completion_steps(20, 80)).await?;
+        autd.send(Silencer::from_completion_time(
+            ULTRASOUND_PERIOD * 20,
+            ULTRASOUND_PERIOD * 80,
+        ))
+        .await?;
         assert_eq!(
             Err(AUTDError::Internal(
                 AUTDInternalError::InvalidSilencerSettings
@@ -175,22 +211,26 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
     // GainSTM異常系
     {
         autd.send((Static::new(), Null::new())).await?;
-        autd.send(Silencer::from_completion_steps(10, 40)).await?;
+        autd.send(Silencer::from_completion_time(
+            ULTRASOUND_PERIOD * 10,
+            ULTRASOUND_PERIOD * 40,
+        ))
+        .await?;
         assert!(autd
-            .send(GainSTM::from_sampling_config(
+            .send(GainSTM::new(
                 SamplingConfig::Division(NonZeroU16::new(40).unwrap()),
                 (0..2).map(|_| Null::new())
-            ))
+            )?)
             .await
             .is_ok());
         assert_eq!(
             Err(AUTDError::Internal(
                 AUTDInternalError::InvalidSilencerSettings
             )),
-            autd.send(GainSTM::from_sampling_config(
+            autd.send(GainSTM::new(
                 SamplingConfig::Division(NonZeroU16::new(39).unwrap()),
                 (0..2).map(|_| Null::new())
-            ))
+            )?)
             .await
         );
         assert_eq!(
@@ -198,10 +238,10 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
                 AUTDInternalError::InvalidSilencerSettings
             )),
             autd.send(
-                GainSTM::from_sampling_config(
+                GainSTM::new(
                     SamplingConfig::Division(NonZeroU16::new(39).unwrap()),
                     (0..2).map(|_| Null::new())
-                )
+                )?
                 .with_segment(Segment::S1, None)
             )
             .await
@@ -209,15 +249,19 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
         autd.send((Static::new(), Null::new())).await?;
         assert!(autd
             .send(
-                GainSTM::from_sampling_config(
+                GainSTM::new(
                     SamplingConfig::Division(NonZeroU16::new(40).unwrap()),
                     (0..2).map(|_| Null::new())
-                )
+                )?
                 .with_segment(Segment::S1, None)
             )
             .await
             .is_ok());
-        autd.send(Silencer::from_completion_steps(20, 80)).await?;
+        autd.send(Silencer::from_completion_time(
+            ULTRASOUND_PERIOD * 20,
+            ULTRASOUND_PERIOD * 80,
+        ))
+        .await?;
         assert_eq!(
             Err(AUTDError::Internal(
                 AUTDInternalError::InvalidSilencerSettings
