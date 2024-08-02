@@ -82,7 +82,7 @@ pub async fn modulation_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Resul
     impl Sawtooth {
         fn new() -> Self {
             Self {
-                config: SamplingConfig::FreqNearest(256. * Hz),
+                config: SamplingConfig::new_nearest(256. * Hz),
                 loop_behavior: LoopBehavior::once(),
                 reverse: false,
             }
@@ -90,7 +90,7 @@ pub async fn modulation_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Resul
 
         fn reverse() -> Self {
             Self {
-                config: SamplingConfig::FreqNearest(256. * Hz),
+                config: SamplingConfig::new_nearest(256. * Hz),
                 loop_behavior: LoopBehavior::once(),
                 reverse: true,
             }
@@ -103,7 +103,7 @@ pub async fn modulation_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Resul
             if self.reverse {
                 res.reverse();
             }
-            Ok(res)
+            Ok(Arc::new(res))
         }
     }
 

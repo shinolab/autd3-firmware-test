@@ -178,7 +178,7 @@ async fn main() -> Result<()> {
             1 => run(autd3_link_twincat::TwinCAT::builder()).await,
             2 => {
                 run(autd3_link_simulator::Simulator::builder(
-                    "[::1]:8080".parse()?,
+                    "127.0.0.1:8080".parse()?,
                 ))
                 .await
             }
