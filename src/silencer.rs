@@ -1,5 +1,3 @@
-use std::num::NonZeroU16;
-
 use crate::print_msg_and_wait_for_key;
 
 use autd3::{
@@ -17,8 +15,7 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
     {
         autd.send(Silencer::default()).await?;
         autd.send((
-            Sine::new(150. * Hz)
-                .with_sampling_config(SamplingConfig::new(NonZeroU16::new(20).unwrap()))?,
+            Sine::new(150. * Hz).with_sampling_config(SamplingConfig::new(20).unwrap())?,
             Focus::new(autd.geometry().center() + 150. * Vector3::z()),
         ))
         .await?;
@@ -94,7 +91,7 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
         assert!(autd
             .send(
                 Sine::new_nearest(100. * Hz)
-                    .with_sampling_config(SamplingConfig::new(NonZeroU16::new(10).unwrap()))?
+                    .with_sampling_config(SamplingConfig::new(10).unwrap())?
             )
             .await
             .is_ok());
@@ -104,7 +101,7 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
             )),
             autd.send(
                 Sine::new_nearest(100. * Hz)
-                    .with_sampling_config(SamplingConfig::new(NonZeroU16::new(9).unwrap()))?
+                    .with_sampling_config(SamplingConfig::new(9).unwrap())?
             )
             .await
         );
@@ -114,7 +111,7 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
             )),
             autd.send(
                 Sine::new_nearest(100. * Hz)
-                    .with_sampling_config(SamplingConfig::new(NonZeroU16::new(9).unwrap()))?
+                    .with_sampling_config(SamplingConfig::new(9).unwrap())?
                     .with_segment(Segment::S1, None)
             )
             .await
@@ -123,7 +120,7 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
         assert!(autd
             .send(
                 Sine::new_nearest(100. * Hz)
-                    .with_sampling_config(SamplingConfig::new(NonZeroU16::new(10).unwrap()))?
+                    .with_sampling_config(SamplingConfig::new(10).unwrap())?
                     .with_segment(Segment::S1, None)
             )
             .await
@@ -155,7 +152,7 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
         .await?;
         assert!(autd
             .send(FociSTM::new(
-                SamplingConfig::new(NonZeroU16::new(40).unwrap()),
+                SamplingConfig::new(40).unwrap(),
                 (0..2).map(|_| (ControlPoint::new(Vector3::zeros()), 0x00))
             )?)
             .await
@@ -165,7 +162,7 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
                 AUTDInternalError::InvalidSilencerSettings
             )),
             autd.send(FociSTM::new(
-                SamplingConfig::new(NonZeroU16::new(39).unwrap()),
+                SamplingConfig::new(39).unwrap(),
                 (0..2).map(|_| (ControlPoint::new(Vector3::zeros()), 0x00))
             )?)
             .await
@@ -176,7 +173,7 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
             )),
             autd.send(
                 FociSTM::new(
-                    SamplingConfig::new(NonZeroU16::new(39).unwrap()),
+                    SamplingConfig::new(39).unwrap(),
                     (0..2).map(|_| (ControlPoint::new(Vector3::zeros()), 0x00))
                 )?
                 .with_segment(Segment::S1, None)
@@ -187,7 +184,7 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
         assert!(autd
             .send(
                 FociSTM::new(
-                    SamplingConfig::new(NonZeroU16::new(40).unwrap()),
+                    SamplingConfig::new(40).unwrap(),
                     (0..2).map(|_| (ControlPoint::new(Vector3::zeros()), 0x00))
                 )?
                 .with_segment(Segment::S1, None)
@@ -218,7 +215,7 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
         .await?;
         assert!(autd
             .send(GainSTM::new(
-                SamplingConfig::new(NonZeroU16::new(40).unwrap()),
+                SamplingConfig::new(40).unwrap(),
                 (0..2).map(|_| Null::new())
             )?)
             .await
@@ -228,7 +225,7 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
                 AUTDInternalError::InvalidSilencerSettings
             )),
             autd.send(GainSTM::new(
-                SamplingConfig::new(NonZeroU16::new(39).unwrap()),
+                SamplingConfig::new(39).unwrap(),
                 (0..2).map(|_| Null::new())
             )?)
             .await
@@ -239,7 +236,7 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
             )),
             autd.send(
                 GainSTM::new(
-                    SamplingConfig::new(NonZeroU16::new(39).unwrap()),
+                    SamplingConfig::new(39).unwrap(),
                     (0..2).map(|_| Null::new())
                 )?
                 .with_segment(Segment::S1, None)
@@ -250,7 +247,7 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
         assert!(autd
             .send(
                 GainSTM::new(
-                    SamplingConfig::new(NonZeroU16::new(40).unwrap()),
+                    SamplingConfig::new(40).unwrap(),
                     (0..2).map(|_| Null::new())
                 )?
                 .with_segment(Segment::S1, None)
