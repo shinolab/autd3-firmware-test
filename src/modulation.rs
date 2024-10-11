@@ -72,7 +72,7 @@ pub async fn modulation_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Resul
         assert_eq!(None, state.current_stm_segment());
     });
 
-    #[derive(Modulation, Clone, Copy)]
+    #[derive(Modulation, Clone, Copy, Debug)]
     pub struct Sawtooth {
         config: SamplingConfig,
         loop_behavior: LoopBehavior,
@@ -98,7 +98,7 @@ pub async fn modulation_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Resul
     }
 
     impl Modulation for Sawtooth {
-        fn calc(&self) -> ModulationCalcResult {
+        fn calc(&self) -> Result<Arc<Vec<u8>>, AUTDInternalError> {
             let mut res = (0..=255u8).collect::<Vec<_>>();
             if self.reverse {
                 res.reverse();

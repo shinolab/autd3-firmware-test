@@ -21,20 +21,20 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
         .await?;
         print_msg_and_wait_for_key("150HzのAMが適用されていること");
 
-        autd.send(Silencer::from_completion_time(
-            ULTRASOUND_PERIOD * SILENCER_STEPS_INTENSITY_DEFAULT * 2,
-            ULTRASOUND_PERIOD * SILENCER_STEPS_PHASE_DEFAULT * 2,
-        ))
+        autd.send(Silencer::new(FixedCompletionTime {
+            intensity: ULTRASOUND_PERIOD * SILENCER_STEPS_INTENSITY_DEFAULT * 2,
+            phase: ULTRASOUND_PERIOD * SILENCER_STEPS_PHASE_DEFAULT * 2,
+        }))
         .await?;
         print_msg_and_wait_for_key("ノイズが小さくなったこと");
 
         autd.send(Silencer::default()).await?;
         print_msg_and_wait_for_key("ノイズが大きくなったこと");
 
-        autd.send(Silencer::from_completion_time(
-            ULTRASOUND_PERIOD * SILENCER_STEPS_INTENSITY_DEFAULT / 2,
-            ULTRASOUND_PERIOD * SILENCER_STEPS_PHASE_DEFAULT / 2,
-        ))
+        autd.send(Silencer::new(FixedCompletionTime {
+            intensity: ULTRASOUND_PERIOD * SILENCER_STEPS_INTENSITY_DEFAULT / 2,
+            phase: ULTRASOUND_PERIOD * SILENCER_STEPS_PHASE_DEFAULT / 2,
+        }))
         .await?;
         print_msg_and_wait_for_key("ノイズが大きくなったこと");
 
@@ -59,20 +59,20 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
         autd.send(stm).await?;
         print_msg_and_wait_for_key("50HzのSTMが適用されていること");
 
-        autd.send(Silencer::from_completion_time(
-            ULTRASOUND_PERIOD * SILENCER_STEPS_INTENSITY_DEFAULT * 2,
-            ULTRASOUND_PERIOD * SILENCER_STEPS_PHASE_DEFAULT * 2,
-        ))
+        autd.send(Silencer::new(FixedCompletionTime {
+            intensity: ULTRASOUND_PERIOD * SILENCER_STEPS_INTENSITY_DEFAULT * 2,
+            phase: ULTRASOUND_PERIOD * SILENCER_STEPS_PHASE_DEFAULT * 2,
+        }))
         .await?;
         print_msg_and_wait_for_key("ノイズが小さくなったこと");
 
         autd.send(Silencer::default()).await?;
         print_msg_and_wait_for_key("ノイズが大きくなったこと");
 
-        autd.send(Silencer::from_completion_time(
-            ULTRASOUND_PERIOD * SILENCER_STEPS_INTENSITY_DEFAULT / 2,
-            ULTRASOUND_PERIOD * SILENCER_STEPS_PHASE_DEFAULT / 2,
-        ))
+        autd.send(Silencer::new(FixedCompletionTime {
+            intensity: ULTRASOUND_PERIOD * SILENCER_STEPS_INTENSITY_DEFAULT / 2,
+            phase: ULTRASOUND_PERIOD * SILENCER_STEPS_PHASE_DEFAULT / 2,
+        }))
         .await?;
         print_msg_and_wait_for_key("ノイズが大きくなったこと");
 
@@ -83,10 +83,10 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
     // Modulation異常系
     {
         autd.send((Static::new(), Null::new())).await?;
-        autd.send(Silencer::from_completion_time(
-            ULTRASOUND_PERIOD * 10,
-            ULTRASOUND_PERIOD * 40,
-        ))
+        autd.send(Silencer::new(FixedCompletionTime {
+            intensity: ULTRASOUND_PERIOD * 10,
+            phase: ULTRASOUND_PERIOD * 40,
+        }))
         .await?;
         assert!(autd
             .send(
@@ -125,10 +125,10 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
             )
             .await
             .is_ok());
-        autd.send(Silencer::from_completion_time(
-            ULTRASOUND_PERIOD * 20,
-            ULTRASOUND_PERIOD * 40,
-        ))
+        autd.send(Silencer::new(FixedCompletionTime {
+            intensity: ULTRASOUND_PERIOD * 20,
+            phase: ULTRASOUND_PERIOD * 40,
+        }))
         .await?;
         assert_eq!(
             Err(AUTDError::Internal(
@@ -145,10 +145,10 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
     // FociSTM異常系
     {
         autd.send((Static::new(), Null::new())).await?;
-        autd.send(Silencer::from_completion_time(
-            ULTRASOUND_PERIOD * 10,
-            ULTRASOUND_PERIOD * 40,
-        ))
+        autd.send(Silencer::new(FixedCompletionTime {
+            intensity: ULTRASOUND_PERIOD * 10,
+            phase: ULTRASOUND_PERIOD * 40,
+        }))
         .await?;
         assert!(autd
             .send(FociSTM::new(
@@ -191,10 +191,10 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
             )
             .await
             .is_ok());
-        autd.send(Silencer::from_completion_time(
-            ULTRASOUND_PERIOD * 20,
-            ULTRASOUND_PERIOD * 80,
-        ))
+        autd.send(Silencer::new(FixedCompletionTime {
+            intensity: ULTRASOUND_PERIOD * 20,
+            phase: ULTRASOUND_PERIOD * 80,
+        }))
         .await?;
         assert_eq!(
             Err(AUTDError::Internal(
@@ -208,10 +208,10 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
     // GainSTM異常系
     {
         autd.send((Static::new(), Null::new())).await?;
-        autd.send(Silencer::from_completion_time(
-            ULTRASOUND_PERIOD * 10,
-            ULTRASOUND_PERIOD * 40,
-        ))
+        autd.send(Silencer::new(FixedCompletionTime {
+            intensity: ULTRASOUND_PERIOD * 10,
+            phase: ULTRASOUND_PERIOD * 40,
+        }))
         .await?;
         assert!(autd
             .send(GainSTM::new(
@@ -254,10 +254,10 @@ pub async fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
             )
             .await
             .is_ok());
-        autd.send(Silencer::from_completion_time(
-            ULTRASOUND_PERIOD * 20,
-            ULTRASOUND_PERIOD * 80,
-        ))
+        autd.send(Silencer::new(FixedCompletionTime {
+            intensity: ULTRASOUND_PERIOD * 20,
+            phase: ULTRASOUND_PERIOD * 80,
+        }))
         .await?;
         assert_eq!(
             Err(AUTDError::Internal(

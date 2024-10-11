@@ -3,6 +3,7 @@ mod debug;
 mod force_fan;
 mod gain;
 mod modulation;
+mod phase_corr;
 mod pulse_width_encoder;
 mod silencer;
 mod stm_focus;
@@ -105,6 +106,9 @@ async fn run<B: LinkBuilder>(b: B) -> Result<()> {
         }),
         ("Pulse Width Encoderテスト", |autd| {
             Box::pin(pulse_width_encoder::pwe_test(autd))
+        }),
+        ("Phase Correctionテスト", |autd| {
+            Box::pin(phase_corr::phase_corr_test(autd))
         }),
         ("Transitionテスト", |autd| {
             Box::pin(transition::transition_test(autd))

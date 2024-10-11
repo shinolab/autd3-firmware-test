@@ -1,6 +1,8 @@
+use std::time::Duration;
+
 use crate::print_msg_and_wait_for_key;
 
-use autd3::{derive::*, driver::link::Link, prelude::*};
+use autd3::{driver::link::Link, prelude::*};
 
 pub async fn debug_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
     autd.send(DebugSettings::new(|_dev, gpio| match gpio {
@@ -64,6 +66,22 @@ pub async fn debug_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()>
     }))
     .await?;
     print_msg_and_wait_for_key("各デバイスのGPIO[1]ピンに出力がないこと");
+
+    print_msg_and_wait_for_key(
+        "0番目のデバイスのGPIO[1]にSingleトリガをセットする.\n次に, Enterを押し, 2秒後にトリガがかかること.\nまた, 0番目のデバイスのGPIO[1]出力と1番目のデバイスのGPIO[1]出力が25usずれていること",
+    );
+    let trig_time = DcSysTime::now() + Duration::from_secs(2);
+    autd.send(DebugSettings::new(|dev, gpio| match (dev.idx(), gpio) {
+        (0, GPIOOut::O0) => DebugType::BaseSignal,
+        (0, GPIOOut::O1) => DebugType::SysTimeEq(trig_time),
+        (_, GPIOOut::O0) => DebugType::BaseSignal,
+        (_, GPIOOut::O1) => DebugType::SysTimeEq(trig_time + ULTRASOUND_PERIOD),
+        _ => DebugType::None,
+    }))
+    .await?;
+
+    println!("Enterを押して進む...");
+    std::io::stdin().read_line(&mut String::new()).unwrap();
 
     Ok(())
 }

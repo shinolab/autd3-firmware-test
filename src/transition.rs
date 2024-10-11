@@ -5,6 +5,7 @@ use crate::print_msg_and_wait_for_key;
 use autd3::{
     derive::*,
     driver::{
+        datagram::EmulateGPIOIn,
         defined::{ControlPoint, ControlPoints},
         link::Link,
     },
