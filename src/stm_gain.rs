@@ -129,13 +129,15 @@ pub async fn stm_gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<
         Err(AUTDError::Internal(
             AUTDInternalError::InvalidSegmentTransition
         )),
-        autd.send(SwapSegment::Gain(Segment::S0)).await
+        autd.send(SwapSegment::Gain(Segment::S0, TransitionMode::Immediate))
+            .await
     );
     assert_eq!(
         Err(AUTDError::Internal(
             AUTDInternalError::InvalidSegmentTransition
         )),
-        autd.send(SwapSegment::Gain(Segment::S1)).await
+        autd.send(SwapSegment::Gain(Segment::S1, TransitionMode::Immediate))
+            .await
     );
 
     Ok(())

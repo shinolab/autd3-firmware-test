@@ -10,7 +10,7 @@ pub async fn gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> 
     .await?;
     print_msg_and_wait_for_key("各デバイスの中心から150mm直上に焦点が生成されていること");
 
-    autd.send(Null::new().with_segment(Segment::S1, true))
+    autd.send(Null::new().with_segment(Segment::S1, Some(TransitionMode::Immediate)))
         .await?;
     print_msg_and_wait_for_key("焦点が消えたこと");
     tokio::time::sleep(std::time::Duration::from_millis(100)).await;
@@ -22,7 +22,8 @@ pub async fn gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> 
         assert_eq!(None, state.current_stm_segment());
     });
 
-    autd.send(SwapSegment::Gain(Segment::S0)).await?;
+    autd.send(SwapSegment::Gain(Segment::S0, TransitionMode::Immediate))
+        .await?;
     print_msg_and_wait_for_key("焦点が再び提示されたこと");
     tokio::time::sleep(std::time::Duration::from_millis(100)).await;
     autd.fpga_state().await?.iter().for_each(|state| {
@@ -33,7 +34,7 @@ pub async fn gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> 
         assert_eq!(None, state.current_stm_segment());
     });
 
-    autd.send(Null::new().with_segment(Segment::S1, false))
+    autd.send(Null::new().with_segment(Segment::S1, None))
         .await?;
     print_msg_and_wait_for_key("焦点がまだ出ていること");
     tokio::time::sleep(std::time::Duration::from_millis(100)).await;
@@ -45,7 +46,8 @@ pub async fn gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> 
         assert_eq!(None, state.current_stm_segment());
     });
 
-    autd.send(SwapSegment::Gain(Segment::S1)).await?;
+    autd.send(SwapSegment::Gain(Segment::S1, TransitionMode::Immediate))
+        .await?;
     print_msg_and_wait_for_key("焦点が消えたこと");
     tokio::time::sleep(std::time::Duration::from_millis(100)).await;
     autd.fpga_state().await?.iter().for_each(|state| {

@@ -165,18 +165,12 @@ async fn main() -> Result<()> {
     match s.trim().parse::<usize>() {
         Ok(i) if i < links.len() => match i {
             0 => {
-                run(
-                    SOEM::builder().with_err_handler(|slave, status| match status {
-                        Status::Error => eprintln!("Error [{}]: {}", slave, status),
-                        Status::Lost => {
-                            eprintln!("Lost [{}]: {}", slave, status);
-                            std::process::exit(-1);
-                        }
-                        Status::StateChanged => {
-                            eprintln!("StateChanged [{}]: {}", slave, status)
-                        }
-                    }),
-                )
+                run(SOEM::builder().with_err_handler(|slave, status| {
+                    eprintln!("slave[{}]: {}", slave, status);
+                    if status == Status::Lost {
+                        std::process::exit(-1);
+                    }
+                }))
                 .await
             }
             1 => run(autd3_link_twincat::TwinCAT::builder()).await,
@@ -190,16 +184,12 @@ async fn main() -> Result<()> {
             _ => unreachable!(),
         },
         _ => {
-            run(
-                SOEM::builder().with_err_handler(|slave, status| match status {
-                    Status::Error => eprintln!("Error [{}]: {}", slave, status),
-                    Status::Lost => {
-                        eprintln!("Lost [{}]: {}", slave, status);
-                        std::process::exit(-1);
-                    }
-                    Status::StateChanged => eprintln!("StateChanged [{}]: {}", slave, status),
-                }),
-            )
+            run(SOEM::builder().with_err_handler(|slave, status| {
+                eprintln!("slave[{}]: {}", slave, status);
+                if status == Status::Lost {
+                    std::process::exit(-1);
+                }
+            }))
             .await
         }
     }

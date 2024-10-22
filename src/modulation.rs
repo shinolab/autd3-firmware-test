@@ -98,12 +98,12 @@ pub async fn modulation_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Resul
     }
 
     impl Modulation for Sawtooth {
-        fn calc(&self) -> Result<Arc<Vec<u8>>, AUTDInternalError> {
+        fn calc(self) -> Result<Vec<u8>, AUTDInternalError> {
             let mut res = (0..=255u8).collect::<Vec<_>>();
             if self.reverse {
                 res.reverse();
             }
-            Ok(Arc::new(res))
+            Ok(res)
         }
     }
 
