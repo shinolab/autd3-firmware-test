@@ -1,62 +1,83 @@
-use autd3::{driver::link::Link, prelude::*};
+use autd3::{core::link::Link, prelude::*};
 
 use crate::print_msg_and_wait_for_key;
 
-pub async fn pwe_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
-    autd.send(DebugSettings::new(|dev, gpio| match gpio {
-        GPIOOut::O0 => DebugType::PwmOut(&dev[0]),
-        GPIOOut::O1 => DebugType::PwmOut(&dev[248]),
-        _ => DebugType::None,
-    }))
-    .await?;
+pub fn pwe_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
+    autd.send(GPIOOutputs::new(|dev, gpio| match gpio {
+        GPIOOut::O0 => GPIOOutputType::PwmOut(&dev[0]),
+        GPIOOut::O1 => GPIOOutputType::PwmOut(&dev[248]),
+        _ => GPIOOutputType::None,
+    }))?;
 
     autd.send(PulseWidthEncoder::new(|_| {
-        |i| match i {
-            0 => 16,
-            1 => 16 * 2,
-            2 => 16 * 3,
-            3 => 16 * 4,
-            _ => 128,
+        |i| match i.0 {
+            0 => PulseWidth::from_duty(6.25 / 100.).unwrap(),
+            1 => PulseWidth::from_duty(12.5 / 100.).unwrap(),
+            2 => PulseWidth::from_duty(18.75 / 100.).unwrap(),
+            3 => PulseWidth::from_duty(25. / 100.).unwrap(),
+            _ => PulseWidth::from_duty(0.5).unwrap(),
         }
-    }))
-    .await?;
+    }))?;
     autd.send((
-        Static::with_intensity(0xFF),
+        Static::default(),
         autd3::gain::Custom::new(|dev| {
             let dev_idx = dev.idx();
             move |tr| match (dev_idx, tr.idx()) {
-                (0, 0) => (Phase::new(0), EmitIntensity::new(0)),
-                (0, 248) => (Phase::new(0), EmitIntensity::new(1)),
-                (_, 0) => (Phase::new(0), EmitIntensity::new(2)),
-                (_, 248) => (Phase::new(0), EmitIntensity::new(3)),
-                _ => (Phase::new(0), EmitIntensity::new(0)),
+                (0, 0) => Drive {
+                    phase: Phase(0),
+                    intensity: EmitIntensity(0),
+                },
+                (0, 248) => Drive {
+                    phase: Phase(0),
+                    intensity: EmitIntensity(1),
+                },
+                (_, 0) => Drive {
+                    phase: Phase(0),
+                    intensity: EmitIntensity(2),
+                },
+                (_, 248) => Drive {
+                    phase: Phase(0),
+                    intensity: EmitIntensity(3),
+                },
+                _ => Drive {
+                    phase: Phase(0),
+                    intensity: EmitIntensity(0),
+                },
             }
         }),
-    ))
-    .await?;
-    print_msg_and_wait_for_key("0番目のデバイスのGPIO[0]出力, 0番目のデバイスのGPIO[1]出力, 1番目のデバイスのGPIO[0]出力, 1番目のデバイスのGPIO[1]出力矩形波のDuty比がそれぞれ6.25, 12.5%, 18.75%, 25%であること");
+    ))?;
+    print_msg_and_wait_for_key(
+        "0番目のデバイスのGPIO[0]出力, 0番目のデバイスのGPIO[1]出力, 1番目のデバイスのGPIO[0]出力, 1番目のデバイスのGPIO[1]出力矩形波のDuty比がそれぞれ6.25, 12.5%, 18.75%, 25%であること",
+    );
 
-    autd.send(PulseWidthEncoder::new(|_| |_| 0)).await?;
+    autd.send(PulseWidthEncoder::new(|_| |_| PulseWidth::new(0).unwrap()))?;
     autd.send((
-        Static::with_intensity(0xFF),
-        Uniform::new(EmitIntensity::MAX),
-    ))
-    .await?;
+        Static::default(),
+        Uniform::new(EmitIntensity::MAX, Phase::ZERO),
+    ))?;
     print_msg_and_wait_for_key("各デバイスのGPIO[0]とGPIO[1]ピンに出力がないこと");
 
-    autd.send(PulseWidthEncoder::default()).await?;
+    autd.send(PulseWidthEncoder::default())?;
     autd.send((
-        Static::with_intensity(0xFF),
+        Static::default(),
         autd3::gain::Custom::new(|dev| {
             let dev_idx = dev.idx();
             move |tr| match (dev_idx, tr.idx()) {
-                (_, 0) => (Phase::new(0), EmitIntensity::new(0)),
-                (_, 248) => (Phase::new(0), EmitIntensity::new(255)),
-                _ => (Phase::new(0), EmitIntensity::new(0)),
+                (_, 0) => Drive {
+                    phase: Phase(0),
+                    intensity: EmitIntensity(0),
+                },
+                (_, 248) => Drive {
+                    phase: Phase(0),
+                    intensity: EmitIntensity(255),
+                },
+                _ => Drive {
+                    phase: Phase(0),
+                    intensity: EmitIntensity(0),
+                },
             }
         }),
-    ))
-    .await?;
+    ))?;
     print_msg_and_wait_for_key(
         "各デバイスのGPIO[0]出力, GPIO[1]出力出力矩形波のDuty比がそれぞれ0%, 50%であること",
     );

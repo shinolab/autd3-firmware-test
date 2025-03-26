@@ -1,16 +1,10 @@
 use crate::print_msg_and_wait_for_key;
 
-use autd3::{
-    derive::*,
-    driver::{
-        defined::{ControlPoint, ControlPoints},
-        link::Link,
-    },
-    prelude::*,
-};
+use autd3::{core::link::Link, driver::firmware::fpga::FOCI_STM_BUF_SIZE_MAX, prelude::*};
 
-pub async fn stm_focus_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
-    autd.send(Static::new()).await?;
+pub fn stm_focus_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
+    autd.send(Static::default())?;
+    autd.send(Silencer::disable())?;
 
     let center = autd.geometry().center() + Vector3::new(0., 0., 150.0 * mm);
     let point_num = 200;
@@ -19,17 +13,17 @@ pub async fn stm_focus_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result
         (0..point_num).map(|i| {
             let theta = 2.0 * PI * i as f32 / point_num as f32;
             let p = radius * Vector3::new(theta.cos(), theta.sin(), 0.0);
-            ControlPoints::<1>::from(ControlPoint::new(center + p))
+            ControlPoints::<1>::from(ControlPoint::new(center + p, Phase::ZERO))
         })
     };
 
-    let stm = FociSTM::new(0.5 * Hz, gen_foci())?;
-    autd.send(stm).await?;
+    let stm = FociSTM::new(gen_foci().collect::<Vec<_>>(), 0.5 * Hz);
+    autd.send(stm)?;
     print_msg_and_wait_for_key(
         "各デバイスの中心から150mm直上を中心に半径30mmの円周上に0.5HzのSTMが適用されていること",
     );
-    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-    autd.fpga_state().await?.iter().for_each(|state| {
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    autd.fpga_state()?.iter().for_each(|state| {
         assert!(state.is_some());
         let state = state.unwrap();
         assert_eq!(Segment::S0, state.current_mod_segment());
@@ -37,12 +31,15 @@ pub async fn stm_focus_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result
         assert_eq!(Some(Segment::S0), state.current_stm_segment());
     });
 
-    let stm = FociSTM::new(1. * Hz, gen_foci())?;
-    autd.send(stm.with_segment(Segment::S1, Some(TransitionMode::Immediate)))
-        .await?;
+    let stm = FociSTM::new(gen_foci().collect::<Vec<_>>(), 1.0 * Hz);
+    autd.send(WithSegment {
+        inner: stm,
+        segment: Segment::S1,
+        transition_mode: Some(TransitionMode::Immediate),
+    })?;
     print_msg_and_wait_for_key("STM周波数が1Hzに変更されたこと");
-    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-    autd.fpga_state().await?.iter().for_each(|state| {
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    autd.fpga_state()?.iter().for_each(|state| {
         assert!(state.is_some());
         let state = state.unwrap();
         assert_eq!(Segment::S0, state.current_mod_segment());
@@ -50,11 +47,33 @@ pub async fn stm_focus_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result
         assert_eq!(Some(Segment::S1), state.current_stm_segment());
     });
 
-    autd.send(SwapSegment::FociSTM(Segment::S0, TransitionMode::Immediate))
-        .await?;
+    autd.send(SwapSegment::FociSTM(Segment::S0, TransitionMode::Immediate))?;
     print_msg_and_wait_for_key("STM周波数が0.5Hzに戻ったこと");
-    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-    autd.fpga_state().await?.iter().for_each(|state| {
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    autd.fpga_state()?.iter().for_each(|state| {
+        assert!(state.is_some());
+        let state = state.unwrap();
+        assert_eq!(Segment::S0, state.current_mod_segment());
+        assert_eq!(None, state.current_gain_segment());
+        assert_eq!(Some(Segment::S0), state.current_stm_segment());
+    });
+
+    autd.send(FociSTM {
+        foci: Circle {
+            center,
+            radius,
+            num_points: FOCI_STM_BUF_SIZE_MAX,
+            n: Vector3::z_axis(),
+            intensity: EmitIntensity::MAX,
+        },
+        config: SamplingConfig::FREQ_40K,
+    })?;
+    print_msg_and_wait_for_key(&format!(
+        "周波数{}HzのSTMが適用されていること",
+        40_000.0 / FOCI_STM_BUF_SIZE_MAX as f32
+    ));
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    autd.fpga_state()?.iter().for_each(|state| {
         assert!(state.is_some());
         let state = state.unwrap();
         assert_eq!(Segment::S0, state.current_mod_segment());
@@ -63,25 +82,29 @@ pub async fn stm_focus_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result
     });
 
     let mut foci = gen_foci().rev().collect::<Vec<_>>();
-    foci[point_num - 1] = foci[point_num - 1].clone().with_intensity(0x00);
-    let stm = FociSTM::new(0.5 * Hz, foci)?
-        .with_loop_behavior(LoopBehavior::once())
-        .with_segment(Segment::S1, None);
-    autd.send(stm).await?;
-    print_msg_and_wait_for_key("何も変化していないこと\n次に, 焦点がデバイスの左端に来たときにEnterを押し次のことを確認する\n焦点が右端に来たときに焦点軌道が反転し, 1サイクル後に停止すること");
-    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-    autd.fpga_state().await?.iter().for_each(|state| {
+    foci[point_num - 1].intensity = EmitIntensity::MIN;
+    let stm = WithLoopBehavior {
+        inner: FociSTM::new(foci, 0.5 * Hz),
+        loop_behavior: LoopBehavior::ONCE,
+        segment: Segment::S1,
+        transition_mode: None,
+    };
+    autd.send(stm)?;
+    print_msg_and_wait_for_key(
+        "何も変化していないこと\n次に, 焦点がデバイスの左端に来たときにEnterを押し次のことを確認する\n焦点が右端に来たときに焦点軌道が反転し, 1サイクル後に停止すること",
+    );
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    autd.fpga_state()?.iter().for_each(|state| {
         assert!(state.is_some());
         let state = state.unwrap();
         assert_eq!(Segment::S0, state.current_mod_segment());
         assert_eq!(None, state.current_gain_segment());
         assert_eq!(Some(Segment::S0), state.current_stm_segment());
     });
-    autd.send(SwapSegment::FociSTM(Segment::S1, TransitionMode::SyncIdx))
-        .await?;
+    autd.send(SwapSegment::FociSTM(Segment::S1, TransitionMode::SyncIdx))?;
     print_msg_and_wait_for_key("");
-    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-    autd.fpga_state().await?.iter().for_each(|state| {
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    autd.fpga_state()?.iter().for_each(|state| {
         assert!(state.is_some());
         let state = state.unwrap();
         assert_eq!(Segment::S0, state.current_mod_segment());
@@ -89,30 +112,36 @@ pub async fn stm_focus_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result
         assert_eq!(Some(Segment::S1), state.current_stm_segment());
     });
 
-    let stm = FociSTM::new(
-        0.5 * Hz,
-        (0..point_num).map(|i| {
-            let theta = 2.0 * PI * i as f32 / point_num as f32;
-            let p = radius * Vector3::new(theta.cos(), theta.sin(), 0.0);
-            [
-                ControlPoint::new(center + p),
-                ControlPoint::new(center - p),
-                ControlPoint::new(center + p),
-                ControlPoint::new(center - p),
-                ControlPoint::new(center + p),
-                ControlPoint::new(center - p),
-                ControlPoint::new(center + p),
-                ControlPoint::new(center - p),
-            ]
-        }),
-    )?
-    .with_segment(Segment::S1, Some(TransitionMode::Immediate));
-    autd.send(stm).await?;
-    print_msg_and_wait_for_key(
-        "各デバイスの中心から150mm直上を中心に半径30mmの円周上に2焦点0.5HzのSTMが適用されていること",
-    );
-    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-    autd.fpga_state().await?.iter().for_each(|state| {
+    let stm = WithSegment {
+        inner: FociSTM::new(
+            (0..FOCI_STM_BUF_SIZE_MAX / 8)
+                .map(|i| {
+                    let theta = 2.0 * PI * i as f32 / (FOCI_STM_BUF_SIZE_MAX / 8) as f32;
+                    let p = radius * Vector3::new(theta.cos(), theta.sin(), 0.0);
+                    [
+                        ControlPoint::new(center + p, Phase::ZERO),
+                        ControlPoint::new(center - p, Phase::ZERO),
+                        ControlPoint::new(center + p, Phase::ZERO),
+                        ControlPoint::new(center - p, Phase::ZERO),
+                        ControlPoint::new(center + p, Phase::ZERO),
+                        ControlPoint::new(center - p, Phase::ZERO),
+                        ControlPoint::new(center + p, Phase::ZERO),
+                        ControlPoint::new(center - p, Phase::ZERO),
+                    ]
+                })
+                .collect::<Vec<_>>(),
+            SamplingConfig::FREQ_4K,
+        ),
+        segment: Segment::S1,
+        transition_mode: Some(TransitionMode::Immediate),
+    };
+    autd.send(stm)?;
+    print_msg_and_wait_for_key(&format!(
+        "各デバイスの中心から150mm直上を中心に半径30mmの円周上に2焦点{}HzのSTMが適用されていること",
+        4_000.0 / (FOCI_STM_BUF_SIZE_MAX / 8) as f32
+    ));
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    autd.fpga_state()?.iter().for_each(|state| {
         assert!(state.is_some());
         let state = state.unwrap();
         assert_eq!(Segment::S0, state.current_mod_segment());
@@ -121,61 +150,45 @@ pub async fn stm_focus_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result
     });
 
     assert_eq!(
-        Err(AUTDError::Internal(
-            AUTDInternalError::InvalidTransitionMode
-        )),
-        autd.send(
-            FociSTM::new(0.5 * Hz, gen_foci())?
-                .with_segment(Segment::S1, Some(TransitionMode::SyncIdx))
-        )
-        .await
+        Err(AUTDDriverError::InvalidTransitionMode),
+        autd.send(WithSegment {
+            inner: FociSTM::new(gen_foci().collect::<Vec<_>>(), 0.5 * Hz),
+            segment: Segment::S1,
+            transition_mode: Some(TransitionMode::SyncIdx),
+        })
     );
     assert_eq!(
-        Err(AUTDError::Internal(
-            AUTDInternalError::InvalidTransitionMode
-        )),
-        autd.send(
-            FociSTM::new(0.5 * Hz, gen_foci())?
-                .with_loop_behavior(LoopBehavior::once())
-                .with_segment(Segment::S0, Some(TransitionMode::Immediate))
-        )
-        .await
+        Err(AUTDDriverError::InvalidTransitionMode),
+        autd.send(WithLoopBehavior {
+            inner: FociSTM::new(gen_foci().collect::<Vec<_>>(), 0.5 * Hz),
+            loop_behavior: LoopBehavior::ONCE,
+            segment: Segment::S0,
+            transition_mode: Some(TransitionMode::Immediate),
+        })
     );
     assert_eq!(
-        Err(AUTDError::Internal(
-            AUTDInternalError::InvalidTransitionMode
-        )),
+        Err(AUTDDriverError::InvalidTransitionMode),
         autd.send(SwapSegment::FociSTM(Segment::S0, TransitionMode::SyncIdx))
-            .await
     );
 
     assert_eq!(
-        Err(AUTDError::Internal(
-            AUTDInternalError::InvalidSegmentTransition
-        )),
+        Err(AUTDDriverError::InvalidSegmentTransition),
         autd.send(SwapSegment::GainSTM(Segment::S0, TransitionMode::SyncIdx))
-            .await
     );
     assert_eq!(
-        Err(AUTDError::Internal(
-            AUTDInternalError::InvalidSegmentTransition
-        )),
+        Err(AUTDDriverError::InvalidSegmentTransition),
         autd.send(SwapSegment::GainSTM(Segment::S1, TransitionMode::SyncIdx))
-            .await
     );
     assert_eq!(
-        Err(AUTDError::Internal(
-            AUTDInternalError::InvalidSegmentTransition
-        )),
+        Err(AUTDDriverError::InvalidSegmentTransition),
         autd.send(SwapSegment::Gain(Segment::S0, TransitionMode::Immediate))
-            .await
     );
     assert_eq!(
-        Err(AUTDError::Internal(
-            AUTDInternalError::InvalidSegmentTransition
-        )),
+        Err(AUTDDriverError::InvalidSegmentTransition),
         autd.send(SwapSegment::Gain(Segment::S1, TransitionMode::Immediate))
-            .await
     );
+
+    autd.send(Clear {})?;
+
     Ok(())
 }
