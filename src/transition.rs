@@ -2,13 +2,11 @@ use std::time::Duration;
 
 use crate::print_msg_and_wait_for_key;
 
-use autd3::{
-    core::link::Link,
-    driver::{datagram::EmulateGPIOIn, firmware::operation::ControlPoint},
-    prelude::*,
-};
+use autd3::{core::link::Link, driver::datagram::EmulateGPIOIn, prelude::*};
 
-fn transition_test_focus_stm<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
+fn transition_test_focus_stm<L: Link>(
+    autd: &mut Controller<L, firmware::Latest>,
+) -> anyhow::Result<()> {
     let center = autd.geometry().center() + Vector3::new(0., 0., 150.0 * mm);
     let point_num = 200;
     let radius = 30.0 * mm;
@@ -28,7 +26,7 @@ fn transition_test_focus_stm<L: Link>(autd: &mut Controller<L>) -> anyhow::Resul
 
     let mut foci = gen_foci().rev().collect::<Vec<_>>();
     foci[point_num - 1] = ControlPoints::<1> {
-        intensity: EmitIntensity::MIN,
+        intensity: Intensity::MIN,
         ..foci[point_num - 1].clone()
     };
     let stm = WithLoopBehavior {
@@ -102,7 +100,9 @@ fn transition_test_focus_stm<L: Link>(autd: &mut Controller<L>) -> anyhow::Resul
     Ok(())
 }
 
-fn transition_test_gain_stm<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
+fn transition_test_gain_stm<L: Link>(
+    autd: &mut Controller<L, firmware::Latest>,
+) -> anyhow::Result<()> {
     let center = autd.geometry().center() + Vector3::new(0., 0., 150.0 * mm);
     let point_num = 200;
     let radius = 30.0 * mm;
@@ -121,7 +121,7 @@ fn transition_test_gain_stm<L: Link>(autd: &mut Controller<L>) -> anyhow::Result
     );
 
     let mut foci = gen_foci().rev().collect::<Vec<_>>();
-    foci[point_num - 1].option.intensity = EmitIntensity::MIN;
+    foci[point_num - 1].option.intensity = Intensity::MIN;
     let stm = WithLoopBehavior {
         inner: GainSTM::new(foci, 0.5 * Hz, Default::default()),
         loop_behavior: LoopBehavior::ONCE,
@@ -194,7 +194,7 @@ fn transition_test_gain_stm<L: Link>(autd: &mut Controller<L>) -> anyhow::Result
     Ok(())
 }
 
-pub fn transition_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
+pub fn transition_test<L: Link>(autd: &mut Controller<L, firmware::Latest>) -> anyhow::Result<()> {
     transition_test_focus_stm(autd)?;
     transition_test_gain_stm(autd)?;
 

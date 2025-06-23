@@ -3,12 +3,12 @@ use std::num::NonZeroU16;
 use crate::print_msg_and_wait_for_key;
 
 use autd3::{
-    core::{defined::ULTRASOUND_PERIOD, link::Link},
-    driver::firmware::fpga::{SILENCER_STEPS_INTENSITY_DEFAULT, SILENCER_STEPS_PHASE_DEFAULT},
+    core::common::{SILENCER_STEPS_INTENSITY_DEFAULT, SILENCER_STEPS_PHASE_DEFAULT},
+    core::{common::ULTRASOUND_PERIOD, link::Link},
     prelude::*,
 };
 
-pub fn silencer_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
+pub fn silencer_test<L: Link>(autd: &mut Controller<L, firmware::Latest>) -> anyhow::Result<()> {
     // Modulation
     {
         autd.send(Silencer::default())?;

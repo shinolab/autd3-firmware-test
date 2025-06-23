@@ -2,7 +2,7 @@ use autd3::{core::link::Link, prelude::*};
 
 use crate::print_msg_and_wait_for_key;
 
-pub fn force_fan_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
+pub fn force_fan_test<L: Link>(autd: &mut Controller<L, firmware::Latest>) -> anyhow::Result<()> {
     autd.send(ForceFan::new(|_| true))?;
     print_msg_and_wait_for_key("ファンが動いていること");
 

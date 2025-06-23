@@ -2,11 +2,11 @@ use crate::print_msg_and_wait_for_key;
 
 use autd3::{
     core::{derive::*, link::Link},
-    driver::firmware::fpga::MOD_BUF_SIZE_MAX,
+    driver::firmware::latest::fpga::MOD_BUF_SIZE_MAX,
     prelude::*,
 };
 
-pub fn modulation_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
+pub fn modulation_test<L: Link>(autd: &mut Controller<L, firmware::Latest>) -> anyhow::Result<()> {
     autd.send((
         Sine::new(150. * Hz, Default::default()),
         Focus::new(
@@ -170,7 +170,7 @@ pub fn modulation_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> 
     }
 
     impl Modulation for Sawtooth {
-        fn calc(self) -> Result<Vec<u8>, ModulationError> {
+        fn calc(self, _limits: &FirmwareLimits) -> Result<Vec<u8>, ModulationError> {
             let mut res = (0..=255u8).collect::<Vec<_>>();
             if self.reverse {
                 res.reverse();

@@ -2,7 +2,7 @@ use crate::print_msg_and_wait_for_key;
 
 use autd3::{core::link::Link, prelude::*};
 
-pub fn gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
+pub fn gain_test<L: Link>(autd: &mut Controller<L, firmware::Latest>) -> anyhow::Result<()> {
     autd.send((
         Sine::new(150. * Hz, SineOption::default()),
         Focus::new(

@@ -1,5 +1,6 @@
 mod clear;
 mod debug;
+mod err;
 mod force_fan;
 mod gain;
 mod modulation;
@@ -16,7 +17,7 @@ use std::io::{self, Write};
 use anyhow::Result;
 
 use autd3::{core::link::Link, driver::firmware::version::FirmwareVersion, prelude::*};
-use autd3_link_soem::{SOEM, Status};
+// use autd3_link_soem::{SOEM, Status};
 
 fn print_check(msg: &str) {
     println!("{}: {}", "Check".yellow().bold(), msg);
@@ -32,11 +33,12 @@ fn print_msg_and_wait_for_key(msg: &str) {
 }
 
 fn run<L: Link>(link: L) -> Result<()> {
-    let mut autd = Controller::open([AUTD3::default(), AUTD3::default()], link)?;
+    let mut autd =
+        Controller::<_, firmware::Latest>::open_with([AUTD3::default(), AUTD3::default()], link)?;
 
     autd.send(GPIOOutputs::new(|_dev, gpio| match gpio {
-        GPIOOut::O0 => GPIOOutputType::BaseSignal,
-        _ => GPIOOutputType::None,
+        GPIOOut::O0 => Some(GPIOOutputType::BaseSignal),
+        _ => None,
     }))?;
     print_check("各デバイスのGPIO[0]ピンの出力が同期していること");
 
@@ -73,7 +75,7 @@ fn run<L: Link>(link: L) -> Result<()> {
 
     type Test<L> = (
         &'static str,
-        fn(&'_ mut Controller<L>) -> anyhow::Result<()>,
+        fn(&'_ mut Controller<L, firmware::Latest>) -> anyhow::Result<()>,
     );
 
     let tests: Vec<Test<_>> = vec![
@@ -95,6 +97,7 @@ fn run<L: Link>(link: L) -> Result<()> {
             transition::transition_test(autd)
         }),
         ("Debugテスト", |autd| debug::debug_test(autd)),
+        ("Errorテスト", |autd| err::err_test(autd)),
     ];
 
     loop {
@@ -147,15 +150,18 @@ fn main() -> Result<()> {
         2 => run(autd3_link_simulator::Simulator::new(
             "127.0.0.1:8080".parse()?,
         )),
-        3 => run(autd3::link::Audit::new(autd3::link::AuditOption::default())),
-        _ => run(SOEM::new(
-            |slave, status| {
-                eprintln!("slave[{}]: {}", slave, status);
-                if status == Status::Lost {
-                    std::process::exit(-1);
-                }
-            },
-            Default::default(),
+        3 => run(autd3::link::Audit::latest(
+            autd3::link::AuditOption::default(),
         )),
+        _ => run(autd3_link_twincat::TwinCAT::new()?),
+        // _ => run(SOEM::new(
+        //     |slave, status| {
+        //         eprintln!("slave[{}]: {}", slave, status);
+        //         if status == Status::Lost {
+        //             std::process::exit(-1);
+        //         }
+        //     },
+        //     Default::default(),
+        // )),
     }
 }

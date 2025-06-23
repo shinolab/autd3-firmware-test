@@ -2,7 +2,7 @@ use crate::print_msg_and_wait_for_key;
 
 use autd3::{core::link::Link, prelude::*};
 
-pub fn phase_corr_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
+pub fn phase_corr_test<L: Link>(autd: &mut Controller<L, firmware::Latest>) -> anyhow::Result<()> {
     autd.send(PhaseCorrection::new(|dev| {
         let wavenumber = dev.wavenumber();
         let p = dev.center() + Vector3::new(0.0, 0.0, 150.0 * mm);
@@ -11,7 +11,7 @@ pub fn phase_corr_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> 
     autd.send((
         Sine::new(150. * Hz, Default::default()),
         Uniform {
-            intensity: EmitIntensity(0xFF),
+            intensity: Intensity(0xFF),
             phase: Phase::ZERO,
         },
     ))?;

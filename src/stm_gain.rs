@@ -2,7 +2,7 @@ use crate::print_msg_and_wait_for_key;
 
 use autd3::{core::link::Link, prelude::*};
 
-pub fn stm_gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
+pub fn stm_gain_test<L: Link>(autd: &mut Controller<L, firmware::Latest>) -> anyhow::Result<()> {
     autd.send(Static::default())?;
 
     let center = autd.geometry().center() + Vector3::new(0., 0., 150.0 * mm);
@@ -58,13 +58,7 @@ pub fn stm_gain_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
     });
 
     let mut foci = gen_foci().rev().collect::<Vec<_>>();
-    foci[point_num - 1] = Focus::new(
-        foci[point_num - 1].pos,
-        FocusOption {
-            intensity: EmitIntensity::MIN,
-            ..Default::default()
-        },
-    );
+    foci[point_num - 1].option.intensity = Intensity::MIN;
     let stm = WithLoopBehavior {
         inner: GainSTM::new(foci, 0.5 * Hz, Default::default()),
         loop_behavior: LoopBehavior::ONCE,

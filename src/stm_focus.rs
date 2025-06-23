@@ -1,8 +1,8 @@
 use crate::print_msg_and_wait_for_key;
 
-use autd3::{core::link::Link, driver::firmware::fpga::FOCI_STM_BUF_SIZE_MAX, prelude::*};
+use autd3::{core::link::Link, driver::firmware::latest::fpga::FOCI_STM_BUF_SIZE_MAX, prelude::*};
 
-pub fn stm_focus_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
+pub fn stm_focus_test<L: Link>(autd: &mut Controller<L, firmware::Latest>) -> anyhow::Result<()> {
     autd.send(Static::default())?;
     autd.send(Silencer::disable())?;
 
@@ -58,31 +58,8 @@ pub fn stm_focus_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
         assert_eq!(Some(Segment::S0), state.current_stm_segment());
     });
 
-    autd.send(FociSTM {
-        foci: Circle {
-            center,
-            radius,
-            num_points: FOCI_STM_BUF_SIZE_MAX,
-            n: Vector3::z_axis(),
-            intensity: EmitIntensity::MAX,
-        },
-        config: SamplingConfig::FREQ_40K,
-    })?;
-    print_msg_and_wait_for_key(&format!(
-        "周波数{}HzのSTMが適用されていること",
-        40_000.0 / FOCI_STM_BUF_SIZE_MAX as f32
-    ));
-    std::thread::sleep(std::time::Duration::from_millis(100));
-    autd.fpga_state()?.iter().for_each(|state| {
-        assert!(state.is_some());
-        let state = state.unwrap();
-        assert_eq!(Segment::S0, state.current_mod_segment());
-        assert_eq!(None, state.current_gain_segment());
-        assert_eq!(Some(Segment::S0), state.current_stm_segment());
-    });
-
     let mut foci = gen_foci().rev().collect::<Vec<_>>();
-    foci[point_num - 1].intensity = EmitIntensity::MIN;
+    foci[point_num - 1].intensity = Intensity::MIN;
     let stm = WithLoopBehavior {
         inner: FociSTM::new(foci, 0.5 * Hz),
         loop_behavior: LoopBehavior::ONCE,
@@ -112,33 +89,62 @@ pub fn stm_focus_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
         assert_eq!(Some(Segment::S1), state.current_stm_segment());
     });
 
-    let stm = WithSegment {
-        inner: FociSTM::new(
-            (0..FOCI_STM_BUF_SIZE_MAX / 8)
-                .map(|i| {
-                    let theta = 2.0 * PI * i as f32 / (FOCI_STM_BUF_SIZE_MAX / 8) as f32;
-                    let p = radius * Vector3::new(theta.cos(), theta.sin(), 0.0);
-                    [
-                        ControlPoint::new(center + p, Phase::ZERO),
-                        ControlPoint::new(center - p, Phase::ZERO),
-                        ControlPoint::new(center + p, Phase::ZERO),
-                        ControlPoint::new(center - p, Phase::ZERO),
-                        ControlPoint::new(center + p, Phase::ZERO),
-                        ControlPoint::new(center - p, Phase::ZERO),
-                        ControlPoint::new(center + p, Phase::ZERO),
-                        ControlPoint::new(center - p, Phase::ZERO),
-                    ]
-                })
-                .collect::<Vec<_>>(),
-            SamplingConfig::FREQ_4K,
-        ),
-        segment: Segment::S1,
-        transition_mode: Some(TransitionMode::Immediate),
-    };
-    autd.send(stm)?;
+    let stm = FociSTM::new(
+        (0..FOCI_STM_BUF_SIZE_MAX / 8)
+            .map(|i| {
+                let theta = 2.0 * PI * i as f32 / (FOCI_STM_BUF_SIZE_MAX / 8) as f32;
+                let p = radius * Vector3::new(theta.cos(), theta.sin(), 0.0);
+                [
+                    ControlPoint::new(center + p, Phase::ZERO),
+                    ControlPoint::new(center - p, Phase::ZERO),
+                    ControlPoint::new(center + p, Phase::ZERO),
+                    ControlPoint::new(center - p, Phase::ZERO),
+                    ControlPoint::new(center + p, Phase::ZERO),
+                    ControlPoint::new(center - p, Phase::ZERO),
+                    ControlPoint::new(center + p, Phase::ZERO),
+                    ControlPoint::new(center - p, Phase::ZERO),
+                ]
+            })
+            .collect::<Vec<_>>(),
+        SamplingConfig::FREQ_4K,
+    );
+    autd.send((
+        Sine {
+            freq: 150 * Hz,
+            option: SineOption::default(),
+        },
+        stm,
+    ))?;
     print_msg_and_wait_for_key(&format!(
         "各デバイスの中心から150mm直上を中心に半径30mmの円周上に2焦点{}HzのSTMが適用されていること",
         4_000.0 / (FOCI_STM_BUF_SIZE_MAX / 8) as f32
+    ));
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    autd.fpga_state()?.iter().for_each(|state| {
+        assert!(state.is_some());
+        let state = state.unwrap();
+        assert_eq!(Segment::S0, state.current_mod_segment());
+        assert_eq!(None, state.current_gain_segment());
+        assert_eq!(Some(Segment::S0), state.current_stm_segment());
+    });
+
+    autd.send(WithSegment {
+        inner: FociSTM {
+            foci: Circle {
+                center,
+                radius,
+                num_points: FOCI_STM_BUF_SIZE_MAX,
+                n: Vector3::z_axis(),
+                intensity: Intensity::MAX,
+            },
+            config: SamplingConfig::FREQ_40K,
+        },
+        segment: Segment::S1,
+        transition_mode: Some(TransitionMode::Immediate),
+    })?;
+    print_msg_and_wait_for_key(&format!(
+        "周波数{}HzのSTMが適用されていること",
+        40_000.0 / FOCI_STM_BUF_SIZE_MAX as f32
     ));
     std::thread::sleep(std::time::Duration::from_millis(100));
     autd.fpga_state()?.iter().for_each(|state| {

@@ -2,11 +2,11 @@ use autd3::{core::link::Link, prelude::*};
 
 use crate::print_msg_and_wait_for_key;
 
-pub fn pwe_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
+pub fn pwe_test<L: Link>(autd: &mut Controller<L, firmware::Latest>) -> anyhow::Result<()> {
     autd.send(GPIOOutputs::new(|dev, gpio| match gpio {
-        GPIOOut::O0 => GPIOOutputType::PwmOut(&dev[0]),
-        GPIOOut::O1 => GPIOOutputType::PwmOut(&dev[248]),
-        _ => GPIOOutputType::None,
+        GPIOOut::O0 => Some(GPIOOutputType::PwmOut(&dev[0])),
+        GPIOOut::O1 => Some(GPIOOutputType::PwmOut(&dev[248])),
+        _ => None,
     }))?;
 
     autd.send(PulseWidthEncoder::new(|_| {
@@ -25,23 +25,23 @@ pub fn pwe_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
             move |tr| match (dev_idx, tr.idx()) {
                 (0, 0) => Drive {
                     phase: Phase(0),
-                    intensity: EmitIntensity(0),
+                    intensity: Intensity(0),
                 },
                 (0, 248) => Drive {
                     phase: Phase(0),
-                    intensity: EmitIntensity(1),
+                    intensity: Intensity(1),
                 },
                 (_, 0) => Drive {
                     phase: Phase(0),
-                    intensity: EmitIntensity(2),
+                    intensity: Intensity(2),
                 },
                 (_, 248) => Drive {
                     phase: Phase(0),
-                    intensity: EmitIntensity(3),
+                    intensity: Intensity(3),
                 },
                 _ => Drive {
                     phase: Phase(0),
-                    intensity: EmitIntensity(0),
+                    intensity: Intensity(0),
                 },
             }
         }),
@@ -51,10 +51,7 @@ pub fn pwe_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
     );
 
     autd.send(PulseWidthEncoder::new(|_| |_| PulseWidth::new(0).unwrap()))?;
-    autd.send((
-        Static::default(),
-        Uniform::new(EmitIntensity::MAX, Phase::ZERO),
-    ))?;
+    autd.send((Static::default(), Uniform::new(Intensity::MAX, Phase::ZERO)))?;
     print_msg_and_wait_for_key("各デバイスのGPIO[0]とGPIO[1]ピンに出力がないこと");
 
     autd.send(PulseWidthEncoder::default())?;
@@ -65,15 +62,15 @@ pub fn pwe_test<L: Link>(autd: &mut Controller<L>) -> anyhow::Result<()> {
             move |tr| match (dev_idx, tr.idx()) {
                 (_, 0) => Drive {
                     phase: Phase(0),
-                    intensity: EmitIntensity(0),
+                    intensity: Intensity(0),
                 },
                 (_, 248) => Drive {
                     phase: Phase(0),
-                    intensity: EmitIntensity(255),
+                    intensity: Intensity(255),
                 },
                 _ => Drive {
                     phase: Phase(0),
-                    intensity: EmitIntensity(0),
+                    intensity: Intensity(0),
                 },
             }
         }),
