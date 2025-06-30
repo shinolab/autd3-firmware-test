@@ -6,8 +6,8 @@ use autd3::{
     driver::{
         datagram::Nop,
         firmware::driver::{Driver, OperationHandler},
-        firmware::latest::{
-            V12,
+        firmware::v12_1::{
+            V12_1,
             cpu::{check_firmware_err, check_if_msg_is_processed},
             operation::OperationGenerator,
         },
@@ -15,14 +15,15 @@ use autd3::{
     prelude::*,
 };
 
-pub fn err_test<L: Link>(autd: &mut Controller<L, firmware::Latest>) -> anyhow::Result<()> {
+pub fn err_test<L: Link>(autd: &mut Controller<L, firmware::V12_1>) -> anyhow::Result<()> {
     {
         let nop = Nop;
 
         let mut g = nop.operation_generator(
             autd.geometry(),
+            &autd.environment,
             &DeviceFilter::all_enabled(),
-            &V12.firmware_limits(),
+            &V12_1.firmware_limits(),
         )?;
         let mut operations = autd
             .geometry()

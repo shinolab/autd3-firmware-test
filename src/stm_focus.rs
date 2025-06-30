@@ -1,8 +1,8 @@
 use crate::print_msg_and_wait_for_key;
 
-use autd3::{core::link::Link, driver::firmware::latest::fpga::FOCI_STM_BUF_SIZE_MAX, prelude::*};
+use autd3::{core::link::Link, driver::firmware::v12_1::fpga::FOCI_STM_BUF_SIZE_MAX, prelude::*};
 
-pub fn stm_focus_test<L: Link>(autd: &mut Controller<L, firmware::Latest>) -> anyhow::Result<()> {
+pub fn stm_focus_test<L: Link>(autd: &mut Controller<L, firmware::V12_1>) -> anyhow::Result<()> {
     autd.send(Static::default())?;
     autd.send(Silencer::disable())?;
 

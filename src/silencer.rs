@@ -8,7 +8,7 @@ use autd3::{
     prelude::*,
 };
 
-pub fn silencer_test<L: Link>(autd: &mut Controller<L, firmware::Latest>) -> anyhow::Result<()> {
+pub fn silencer_test<L: Link>(autd: &mut Controller<L, firmware::V12_1>) -> anyhow::Result<()> {
     // Modulation
     {
         autd.send(Silencer::default())?;
@@ -30,7 +30,7 @@ pub fn silencer_test<L: Link>(autd: &mut Controller<L, firmware::Latest>) -> any
         autd.send(Silencer::new(FixedCompletionTime {
             intensity: ULTRASOUND_PERIOD * SILENCER_STEPS_INTENSITY_DEFAULT as u32 * 2,
             phase: ULTRASOUND_PERIOD * SILENCER_STEPS_PHASE_DEFAULT as u32 * 2,
-            strict_mode: true,
+            strict: true,
         }))?;
         print_msg_and_wait_for_key("ノイズが小さくなったこと");
 
@@ -40,7 +40,7 @@ pub fn silencer_test<L: Link>(autd: &mut Controller<L, firmware::Latest>) -> any
         autd.send(Silencer::new(FixedCompletionTime {
             intensity: ULTRASOUND_PERIOD * SILENCER_STEPS_INTENSITY_DEFAULT as u32 / 2,
             phase: ULTRASOUND_PERIOD * SILENCER_STEPS_PHASE_DEFAULT as u32 / 2,
-            strict_mode: true,
+            strict: true,
         }))?;
         print_msg_and_wait_for_key("ノイズが大きくなったこと");
 
@@ -68,7 +68,7 @@ pub fn silencer_test<L: Link>(autd: &mut Controller<L, firmware::Latest>) -> any
         autd.send(Silencer::new(FixedCompletionTime {
             intensity: ULTRASOUND_PERIOD * SILENCER_STEPS_INTENSITY_DEFAULT as u32 * 2,
             phase: ULTRASOUND_PERIOD * SILENCER_STEPS_PHASE_DEFAULT as u32 * 2,
-            strict_mode: true,
+            strict: true,
         }))?;
         print_msg_and_wait_for_key("ノイズが小さくなったこと");
 
@@ -78,7 +78,7 @@ pub fn silencer_test<L: Link>(autd: &mut Controller<L, firmware::Latest>) -> any
         autd.send(Silencer::new(FixedCompletionTime {
             intensity: ULTRASOUND_PERIOD * SILENCER_STEPS_INTENSITY_DEFAULT as u32 / 2,
             phase: ULTRASOUND_PERIOD * SILENCER_STEPS_PHASE_DEFAULT as u32 / 2,
-            strict_mode: true,
+            strict: true,
         }))?;
         print_msg_and_wait_for_key("ノイズが大きくなったこと");
 
@@ -92,7 +92,7 @@ pub fn silencer_test<L: Link>(autd: &mut Controller<L, firmware::Latest>) -> any
         autd.send(Silencer::new(FixedCompletionTime {
             intensity: ULTRASOUND_PERIOD * 10,
             phase: ULTRASOUND_PERIOD * 40,
-            strict_mode: true,
+            strict: true,
         }))?;
         assert!(
             autd.send(
@@ -154,7 +154,7 @@ pub fn silencer_test<L: Link>(autd: &mut Controller<L, firmware::Latest>) -> any
         autd.send(Silencer::new(FixedCompletionTime {
             intensity: ULTRASOUND_PERIOD * 20,
             phase: ULTRASOUND_PERIOD * 40,
-            strict_mode: true,
+            strict: true,
         }))?;
         assert_eq!(
             Err(AUTDDriverError::InvalidSilencerSettings),
@@ -171,7 +171,7 @@ pub fn silencer_test<L: Link>(autd: &mut Controller<L, firmware::Latest>) -> any
         autd.send(Silencer::new(FixedCompletionTime {
             intensity: ULTRASOUND_PERIOD * 10,
             phase: ULTRASOUND_PERIOD * 40,
-            strict_mode: true,
+            strict: true,
         }))?;
         assert!(
             autd.send(FociSTM::new(
@@ -213,7 +213,7 @@ pub fn silencer_test<L: Link>(autd: &mut Controller<L, firmware::Latest>) -> any
         autd.send(Silencer::new(FixedCompletionTime {
             intensity: ULTRASOUND_PERIOD * 20,
             phase: ULTRASOUND_PERIOD * 80,
-            strict_mode: true,
+            strict: true,
         }))?;
         assert_eq!(
             Err(AUTDDriverError::InvalidSilencerSettings),
@@ -227,7 +227,7 @@ pub fn silencer_test<L: Link>(autd: &mut Controller<L, firmware::Latest>) -> any
         autd.send(Silencer::new(FixedCompletionTime {
             intensity: ULTRASOUND_PERIOD * 10,
             phase: ULTRASOUND_PERIOD * 40,
-            strict_mode: true,
+            strict: true,
         }))?;
         assert!(
             autd.send(GainSTM::new(
@@ -273,7 +273,7 @@ pub fn silencer_test<L: Link>(autd: &mut Controller<L, firmware::Latest>) -> any
         autd.send(Silencer::new(FixedCompletionTime {
             intensity: ULTRASOUND_PERIOD * 20,
             phase: ULTRASOUND_PERIOD * 80,
-            strict_mode: true,
+            strict: true,
         }))?;
         assert_eq!(
             Err(AUTDDriverError::InvalidSilencerSettings),

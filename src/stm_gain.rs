@@ -2,7 +2,7 @@ use crate::print_msg_and_wait_for_key;
 
 use autd3::{core::link::Link, prelude::*};
 
-pub fn stm_gain_test<L: Link>(autd: &mut Controller<L, firmware::Latest>) -> anyhow::Result<()> {
+pub fn stm_gain_test<L: Link>(autd: &mut Controller<L, firmware::V12_1>) -> anyhow::Result<()> {
     autd.send(Static::default())?;
 
     let center = autd.geometry().center() + Vector3::new(0., 0., 150.0 * mm);

@@ -5,7 +5,7 @@ use crate::print_msg_and_wait_for_key;
 use autd3::{core::link::Link, driver::datagram::EmulateGPIOIn, prelude::*};
 
 fn transition_test_focus_stm<L: Link>(
-    autd: &mut Controller<L, firmware::Latest>,
+    autd: &mut Controller<L, firmware::V12_1>,
 ) -> anyhow::Result<()> {
     let center = autd.geometry().center() + Vector3::new(0., 0., 150.0 * mm);
     let point_num = 200;
@@ -101,7 +101,7 @@ fn transition_test_focus_stm<L: Link>(
 }
 
 fn transition_test_gain_stm<L: Link>(
-    autd: &mut Controller<L, firmware::Latest>,
+    autd: &mut Controller<L, firmware::V12_1>,
 ) -> anyhow::Result<()> {
     let center = autd.geometry().center() + Vector3::new(0., 0., 150.0 * mm);
     let point_num = 200;
@@ -194,7 +194,7 @@ fn transition_test_gain_stm<L: Link>(
     Ok(())
 }
 
-pub fn transition_test<L: Link>(autd: &mut Controller<L, firmware::Latest>) -> anyhow::Result<()> {
+pub fn transition_test<L: Link>(autd: &mut Controller<L, firmware::V12_1>) -> anyhow::Result<()> {
     transition_test_focus_stm(autd)?;
     transition_test_gain_stm(autd)?;
 

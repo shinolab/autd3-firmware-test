@@ -2,7 +2,7 @@ use autd3::{core::link::Link, prelude::*};
 
 use crate::print_msg_and_wait_for_key;
 
-pub fn pwe_test<L: Link>(autd: &mut Controller<L, firmware::Latest>) -> anyhow::Result<()> {
+pub fn pwe_test<L: Link>(autd: &mut Controller<L, firmware::V12_1>) -> anyhow::Result<()> {
     autd.send(GPIOOutputs::new(|dev, gpio| match gpio {
         GPIOOut::O0 => Some(GPIOOutputType::PwmOut(&dev[0])),
         GPIOOut::O1 => Some(GPIOOutputType::PwmOut(&dev[248])),

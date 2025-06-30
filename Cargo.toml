@@ -5,9 +5,9 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.98"
-autd3 = "34.0.0-rc.1"
-autd3-link-twincat = "34.0.0-rc.1"
-autd3-link-simulator = { version = "34.0.0-rc.1", features = ["blocking"] }
+autd3 = { git = "https://github.com/shinolab/autd3-rs.git", rev = "553b3c61222b32ff5438e10eea9cd8c4dcb2d04b" }
+autd3-link-twincat = { git = "https://github.com/shinolab/autd3-rs.git", rev = "553b3c61222b32ff5438e10eea9cd8c4dcb2d04b" }
+autd3-link-simulator = { git = "https://github.com/shinolab/autd3-rs.git", rev = "553b3c61222b32ff5438e10eea9cd8c4dcb2d04b", features = ["blocking"] }
 colored = "3.0.0"
 tracing-subscriber = "0.3.19"
 tracing = "0.1.40"

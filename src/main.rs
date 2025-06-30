@@ -4,6 +4,7 @@ mod err;
 mod force_fan;
 mod gain;
 mod modulation;
+mod output_mask;
 mod phase_corr;
 mod pulse_width_encoder;
 mod silencer;
@@ -34,7 +35,7 @@ fn print_msg_and_wait_for_key(msg: &str) {
 
 fn run<L: Link>(link: L) -> Result<()> {
     let mut autd =
-        Controller::<_, firmware::Latest>::open_with([AUTD3::default(), AUTD3::default()], link)?;
+        Controller::<_, firmware::V12_1>::open_with([AUTD3::default(), AUTD3::default()], link)?;
 
     autd.send(GPIOOutputs::new(|_dev, gpio| match gpio {
         GPIOOut::O0 => Some(GPIOOutputType::BaseSignal),
@@ -75,7 +76,7 @@ fn run<L: Link>(link: L) -> Result<()> {
 
     type Test<L> = (
         &'static str,
-        fn(&'_ mut Controller<L, firmware::Latest>) -> anyhow::Result<()>,
+        fn(&'_ mut Controller<L, firmware::V12_1>) -> anyhow::Result<()>,
     );
 
     let tests: Vec<Test<_>> = vec![
@@ -98,6 +99,9 @@ fn run<L: Link>(link: L) -> Result<()> {
         }),
         ("Debugテスト", |autd| debug::debug_test(autd)),
         ("Errorテスト", |autd| err::err_test(autd)),
+        ("Output Maskテスト", |autd| {
+            output_mask::output_mask_test(autd)
+        }),
     ];
 
     loop {
@@ -150,9 +154,11 @@ fn main() -> Result<()> {
         2 => run(autd3_link_simulator::Simulator::new(
             "127.0.0.1:8080".parse()?,
         )),
-        3 => run(autd3::link::Audit::latest(
-            autd3::link::AuditOption::default(),
-        )),
+        3 => run(
+            autd3::link::Audit::<autd3::link::audit::version::V12_1>::new(
+                autd3::link::AuditOption::default(),
+            ),
+        ),
         _ => run(autd3_link_twincat::TwinCAT::new()?),
         // _ => run(SOEM::new(
         //     |slave, status| {

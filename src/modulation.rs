@@ -2,11 +2,11 @@ use crate::print_msg_and_wait_for_key;
 
 use autd3::{
     core::{derive::*, link::Link},
-    driver::firmware::latest::fpga::MOD_BUF_SIZE_MAX,
+    driver::firmware::v12_1::fpga::MOD_BUF_SIZE_MAX,
     prelude::*,
 };
 
-pub fn modulation_test<L: Link>(autd: &mut Controller<L, firmware::Latest>) -> anyhow::Result<()> {
+pub fn modulation_test<L: Link>(autd: &mut Controller<L, firmware::V12_1>) -> anyhow::Result<()> {
     autd.send((
         Sine::new(150. * Hz, Default::default()),
         Focus::new(

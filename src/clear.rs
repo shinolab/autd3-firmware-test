@@ -1,6 +1,6 @@
 use autd3::{core::link::Link, prelude::*};
 
-pub fn clear_test<L: Link>(autd: &mut Controller<L, firmware::Latest>) -> anyhow::Result<()> {
+pub fn clear_test<L: Link>(autd: &mut Controller<L, firmware::V12_1>) -> anyhow::Result<()> {
     autd.send(Clear::new())?;
     autd.send(ReadsFPGAState::new(|_| true))?;
     std::thread::sleep(std::time::Duration::from_millis(200));
