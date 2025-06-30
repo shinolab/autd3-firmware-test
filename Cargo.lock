@@ -52,7 +52,8 @@ checksum = "1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0"
 [[package]]
 name = "autd3"
 version = "35.0.0"
-source = "git+https://github.com/shinolab/autd3-rs.git?rev=553b3c61222b32ff5438e10eea9cd8c4dcb2d04b#553b3c61222b32ff5438e10eea9cd8c4dcb2d04b"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6f670bfa7ea81d3e1f773bfb155736c29cdf7d35a8d7bed891218bae6f1cef7c"
 dependencies = [
  "autd3-core 35.0.0",
  "autd3-driver 35.0.0",
@@ -66,7 +67,6 @@ dependencies = [
  "itertools",
  "num",
  "smallvec",
- "zerocopy",
 ]
 
 [[package]]
@@ -138,7 +138,8 @@ dependencies = [
 [[package]]
 name = "autd3-core"
 version = "35.0.0"
-source = "git+https://github.com/shinolab/autd3-rs.git?rev=553b3c61222b32ff5438e10eea9cd8c4dcb2d04b#553b3c61222b32ff5438e10eea9cd8c4dcb2d04b"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "278bdf1ea4ee92d436f0d42aab5bf7c3365ea9754102432eedc17db340067d63"
 dependencies = [
  "autd3-derive 35.0.0",
  "bit-vec",
@@ -192,7 +193,8 @@ dependencies = [
 [[package]]
 name = "autd3-derive"
 version = "35.0.0"
-source = "git+https://github.com/shinolab/autd3-rs.git?rev=553b3c61222b32ff5438e10eea9cd8c4dcb2d04b#553b3c61222b32ff5438e10eea9cd8c4dcb2d04b"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "58dbbbc29ec0f3dac82da6f0fbe9a6b9f793c612bcb1a5d8f079421982caaedd"
 dependencies = [
  "quote",
  "syn",
@@ -271,7 +273,8 @@ dependencies = [
 [[package]]
 name = "autd3-driver"
 version = "35.0.0"
-source = "git+https://github.com/shinolab/autd3-rs.git?rev=553b3c61222b32ff5438e10eea9cd8c4dcb2d04b#553b3c61222b32ff5438e10eea9cd8c4dcb2d04b"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ca9d2d720198c6fad1b793f4a30c848b5ebabfcbc6d9f864aa1f7d22fa9c4dad"
 dependencies = [
  "autd3-core 35.0.0",
  "autd3-derive 35.0.0",
@@ -335,7 +338,8 @@ dependencies = [
 [[package]]
 name = "autd3-firmware-emulator"
 version = "35.0.0"
-source = "git+https://github.com/shinolab/autd3-rs.git?rev=553b3c61222b32ff5438e10eea9cd8c4dcb2d04b#553b3c61222b32ff5438e10eea9cd8c4dcb2d04b"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c3c67e451aab376ebfcf5b6ac6cece95b6266f8ec7f2bba8fa8f358f639e8bb0"
 dependencies = [
  "autd3-core 35.0.0",
  "autd3-driver 35.0.0",
@@ -347,11 +351,12 @@ dependencies = [
 
 [[package]]
 name = "autd3-firmware-test"
-version = "12.0.0"
+version = "12.1.0"
 dependencies = [
  "anyhow",
  "autd3",
  "autd3-link-simulator",
+ "autd3-link-soem",
  "autd3-link-twincat",
  "colored",
  "tracing",
@@ -361,7 +366,8 @@ dependencies = [
 [[package]]
 name = "autd3-link-simulator"
 version = "35.0.0"
-source = "git+https://github.com/shinolab/autd3-rs.git?rev=553b3c61222b32ff5438e10eea9cd8c4dcb2d04b#553b3c61222b32ff5438e10eea9cd8c4dcb2d04b"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b5868919df65b6fe5c85e80336debd2b2402ed928c636bda5b8f2e919f77153b"
 dependencies = [
  "autd3-core 35.0.0",
  "autd3-protobuf",
@@ -370,9 +376,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "autd3-link-soem"
+version = "35.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "be3c5328da77b9e75566a058f9698ff538c0e1f8d0b2c65577c0f7498822b68a"
+dependencies = [
+ "anyhow",
+ "autd3-core 35.0.0",
+ "cc",
+ "core_affinity",
+ "crossbeam-channel",
+ "derive_more",
+ "getset",
+ "glob",
+ "spin_sleep",
+ "ta",
+ "thiserror",
+ "thread-priority",
+ "time",
+ "tracing",
+ "windows 0.61.3",
+ "zerocopy",
+]
+
+[[package]]
 name = "autd3-link-twincat"
 version = "35.0.0"
-source = "git+https://github.com/shinolab/autd3-rs.git?rev=553b3c61222b32ff5438e10eea9cd8c4dcb2d04b#553b3c61222b32ff5438e10eea9cd8c4dcb2d04b"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ccb7a992a34e9e360d031c07470448e0d242aee39a402557575218c1c50815b5"
 dependencies = [
  "autd3-core 35.0.0",
  "libloading",
@@ -383,7 +414,8 @@ dependencies = [
 [[package]]
 name = "autd3-protobuf"
 version = "35.0.0"
-source = "git+https://github.com/shinolab/autd3-rs.git?rev=553b3c61222b32ff5438e10eea9cd8c4dcb2d04b#553b3c61222b32ff5438e10eea9cd8c4dcb2d04b"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cbad1e96c8d10e5b3681c0126247a78f2ed5d674cf3f026b754a0acf4d5e04af"
 dependencies = [
  "autd3-core 35.0.0",
  "autd3-driver 35.0.0",
@@ -480,6 +512,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d71b6127be86fdcfddb610f7182ac57211d4b18a3e9c82eb2d17662f2227ad6a"
 
 [[package]]
+name = "cc"
+version = "1.2.27"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d487aa071b5f64da6f19a3e848e3578944b726ee5a4854b82172f02aa876bfdc"
+dependencies = [
+ "shlex",
+]
+
+[[package]]
 name = "cfg-if"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -499,6 +540,26 @@ name = "const_fn"
 version = "0.4.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2f8a2ca5ac02d09563609681103aada9e1777d54fc57a5acd7a41404f9c93b6e"
+
+[[package]]
+name = "core_affinity"
+version = "0.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a034b3a7b624016c6e13f5df875747cc25f884156aad2abd12b6c46797971342"
+dependencies = [
+ "libc",
+ "num_cpus",
+ "winapi",
+]
+
+[[package]]
+name = "crossbeam-channel"
+version = "0.5.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "82b8f8f868b36967f9606790d1903570de9ceaf870a7bf9fbbd3016d636a2cb2"
+dependencies = [
+ "crossbeam-utils",
+]
 
 [[package]]
 name = "crossbeam-deque"
@@ -641,6 +702,12 @@ name = "gimli"
 version = "0.31.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "07e28edb80900c19c28f1072f2e8aeca7fa06b23cd4169cefe1af5aa3260783f"
+
+[[package]]
+name = "glob"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a8d1add55171497b4705a648c6b583acafb01d58050a51727785f0b2c8e0a2b2"
 
 [[package]]
 name = "h2"
@@ -1211,6 +1278,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "989e6739f80c4ad5b13e0fd7fe89531180375b18520cc8c82080e4dc4035b84f"
 
 [[package]]
+name = "rustversion"
+version = "1.0.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8a0d197bd2c9dc6e53b84da9556a69ba4cdfab8619eb41a8bd1cc2027a0f6b1d"
+
+[[package]]
 name = "safe_arch"
 version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1253,6 +1326,12 @@ checksum = "f40ca3c46823713e0d4209592e8d6e826aa57e928f09752619fc696c499637f6"
 dependencies = [
  "lazy_static",
 ]
+
+[[package]]
+name = "shlex"
+version = "1.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 
 [[package]]
 name = "simba"
@@ -1319,6 +1398,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0bf256ce5efdfa370213c1dabab5935a12e49f2c58d15e9eac2870d3b4f27263"
 
 [[package]]
+name = "ta"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "609409d472a0a7d8d4dd9e19891bbdef546b9dce670c3057d0e02192dc541226"
+
+[[package]]
 name = "thiserror"
 version = "2.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1336,6 +1421,20 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "thread-priority"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cd4ef372b29fbcc6cb0cef97bcbf3ffa9da90e02eb23dbf14db48ce30d11d2d5"
+dependencies = [
+ "bitflags",
+ "cfg-if",
+ "libc",
+ "log",
+ "rustversion",
+ "windows 0.61.3",
 ]
 
 [[package]]

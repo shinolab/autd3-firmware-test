@@ -18,7 +18,7 @@ use std::io::{self, Write};
 use anyhow::Result;
 
 use autd3::{core::link::Link, driver::firmware::version::FirmwareVersion, prelude::*};
-// use autd3_link_soem::{SOEM, Status};
+use autd3_link_soem::{SOEM, Status};
 
 fn print_check(msg: &str) {
     println!("{}: {}", "Check".yellow().bold(), msg);
@@ -159,15 +159,14 @@ fn main() -> Result<()> {
                 autd3::link::AuditOption::default(),
             ),
         ),
-        _ => run(autd3_link_twincat::TwinCAT::new()?),
-        // _ => run(SOEM::new(
-        //     |slave, status| {
-        //         eprintln!("slave[{}]: {}", slave, status);
-        //         if status == Status::Lost {
-        //             std::process::exit(-1);
-        //         }
-        //     },
-        //     Default::default(),
-        // )),
+        _ => run(SOEM::new(
+            |slave, status| {
+                eprintln!("slave[{}]: {}", slave, status);
+                if status == Status::Lost {
+                    std::process::exit(-1);
+                }
+            },
+            Default::default(),
+        )),
     }
 }
